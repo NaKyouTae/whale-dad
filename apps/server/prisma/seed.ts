@@ -4,7 +4,14 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { BOSS_CHANNEL_MAX, BOSS_CHANNEL_MIN } from "@whale-dad/shared";
 
-const pool = new Pool({ connectionString: process.env.DIRECT_URL ?? process.env.DATABASE_URL });
+/** 빈 문자열로 설정된 환경변수는 없는 것으로 취급한다 (prisma.config.ts 와 같은 이유) */
+function env(name: string): string | undefined {
+  const raw = process.env[name];
+  const value = typeof raw === "string" ? raw.trim() : "";
+  return value.length > 0 ? value : undefined;
+}
+
+const pool = new Pool({ connectionString: env("DIRECT_URL") ?? env("DATABASE_URL") });
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 async function main() {

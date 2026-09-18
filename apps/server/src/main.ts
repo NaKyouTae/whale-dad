@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { AppModule } from "./app.module";
+import { envNumber, envString } from "./config/env";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 import { TransformInterceptor } from "./common/interceptors/transform.interceptor";
 
@@ -24,14 +25,14 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  const origins = (process.env.CORS_ORIGINS ?? "http://localhost:20001")
+  const origins = envString("CORS_ORIGINS", "http://localhost:20001")
     .split(",")
     .map((o) => o.trim())
     .filter(Boolean);
 
   app.enableCors({ origin: origins, credentials: true });
 
-  if (process.env.NODE_ENV !== "production") {
+  if (envString("NODE_ENV", "development") !== "production") {
     const config = new DocumentBuilder()
       .setTitle("whale-dad API")
       .setDescription("고래 아빠를 위하여 — API 문서")
@@ -41,7 +42,7 @@ async function bootstrap() {
     SwaggerModule.setup("api/docs", app, SwaggerModule.createDocument(app, config));
   }
 
-  const port = Number(process.env.PORT ?? 20000);
+  const port = envNumber("PORT", 20000);
   await app.listen(port, "0.0.0.0");
 
   Logger.log(`🐋 whale-dad server listening on http://localhost:${port}/api`, "Bootstrap");

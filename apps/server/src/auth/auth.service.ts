@@ -67,7 +67,8 @@ export class AuthService {
 
   /** 쿠키 만료와 토큰 만료를 맞추기 위한 값 (ms) */
   get cookieMaxAge(): number {
-    const raw = this.config.get<string>("JWT_EXPIRES_IN") ?? "30d";
+    // 빈 문자열도 "없음"으로 보려면 ?? 가 아니라 || 를 써야 한다
+    const raw = this.config.get<string>("JWT_EXPIRES_IN") || "30d";
     const match = /^(\d+)([smhd])$/.exec(raw);
     if (!match) return 30 * 24 * 60 * 60 * 1000;
 

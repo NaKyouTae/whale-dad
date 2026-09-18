@@ -118,13 +118,18 @@ pnpm dev
 `render.yaml`(Blueprint) + `Dockerfile.render` 로 배포한다.
 (로컬은 `docker-compose.yml` 의 PostgreSQL, 운영은 Supabase 를 쓴다.)
 
+> Supabase 는 **Session pooler(5432)** 하나만 쓰면 된다.
+> Direct connection 은 IPv6 전용이라 Render 에서 안 붙고, Transaction pooler(6543)는
+> driver adapter 구성에서 `?pgbouncer=` / `?connection_limit=` 이 무시되므로 이점이 없다.
+> 풀 크기는 `DATABASE_POOL_MAX`(기본 10)로 조절한다.
+
 1. Render 대시보드에서 **New → Blueprint** → 이 저장소 연결
 2. `sync: false` 로 표시된 값만 대시보드에서 입력한다
 
 | 키 | 필수 | 값 |
 | --- | --- | --- |
-| `DATABASE_URL` | ✅ | Supabase **Transaction pooler** (6543), `?pgbouncer=true&connection_limit=1` |
-| `DIRECT_URL` | ✅ | Supabase **Direct connection** (5432). 마이그레이션 전용 |
+| `DATABASE_URL` | ✅ | Supabase **Session pooler** (5432) 문자열 |
+| `DIRECT_URL` | ✅ | 위와 **같은 값**. `prisma migrate deploy` 가 쓴다 |
 | `JWT_SECRET` | ✅ | Render 가 자동 생성(`generateValue`). 바꾸면 기존 로그인이 전부 풀린다 |
 | `CORS_ORIGINS` | ✅ | 배포된 Vercel 도메인. 안 맞으면 쿠키가 안 붙어 로그인이 계속 풀린다 |
 | `SUPABASE_*` | — | Storage 를 쓸 때만. 비워두면 해당 기능만 꺼진다 |
@@ -146,6 +151,19 @@ docker run --rm -p 20050:20000 \
   -e CORS_ORIGINS="http://localhost:20001" \
   whale-dad-server
 ```
+
+#### 배포가 `P1013` 으로 죽을 때
+
+`prisma migrate deploy` 단계에서 나는 연결 문자열 문제다. 메시지별로 원인이 다르다.
+
+| 메시지 | 원인 |
+| --- | --- |
+| `empty host in database URL` | 호스트 자리가 비어 있다 (`...@:5432/postgres`). 값이 잘렸는지 확인 |
+| `The scheme is not recognized` | `postgresql://` 로 시작하지 않는다. `host=... port=...` 블록을 붙여넣었는지 확인 |
+| `invalid port number` | 비밀번호의 `/` `#` `?` 가 URL 인코딩되지 않았다 (`%2F` `%23` `%3F`) |
+| `Connection url is empty` | `DATABASE_URL` 이 비어 있다 |
+
+비밀번호 특수문자는 반드시 URL 인코딩한다 — `@`→`%40`, `#`→`%23`, `/`→`%2F`, `?`→`%3F`, `:`→`%3A`.
 
 ### 프론트 → Vercel
 

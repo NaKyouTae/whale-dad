@@ -15,7 +15,7 @@ import { JwtAuthGuard, OptionalJwtAuthGuard } from "./jwt-auth.guard";
         secret: config.getOrThrow<string>("JWT_SECRET"),
         // expiresIn 은 ms 패키지의 리터럴 유니온이라 환경변수 문자열을 그대로 못 넣는다
         signOptions: {
-          expiresIn: (config.get<string>("JWT_EXPIRES_IN") ?? "30d") as JwtSignOptions["expiresIn"],
+          expiresIn: (config.get<string>("JWT_EXPIRES_IN") || "30d") as JwtSignOptions["expiresIn"],
         },
       }),
     }),

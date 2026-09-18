@@ -37,14 +37,17 @@ services:
         value: "https://whale-dad.vercel.app"
 
       # ── DB (필수) ──
-      # Supabase Dashboard > Project Settings > Database > Connection string
-      # DATABASE_URL : 런타임용 Transaction pooler (6543) + ?pgbouncer=true&connection_limit=1
+      # Supabase Dashboard > Connect > Session pooler 의 문자열을 두 값에 똑같이 넣는다.
+      #   Direct connection(db.<ref>.supabase.co)은 IPv6 전용이라 Render 에서 붙지 않는다.
+      #   Transaction pooler(6543)는 필요 없다 — driver adapter 라 URL 파라미터가 무시되고,
+      #   풀 크기는 DATABASE_POOL_MAX 로 정한다.
       - key: DATABASE_URL
         sync: false
-      # DIRECT_URL : prisma migrate deploy 용 Direct connection (5432)
-      #   pooler 로 마이그레이션을 돌리면 실패하므로 반드시 따로 넣는다.
+      # prisma migrate deploy 가 쓰는 값
       - key: DIRECT_URL
         sync: false
+      - key: DATABASE_POOL_MAX
+        value: "10"
 
       # ── 인증 (필수) ──
       # Render 가 배포 시 랜덤 값을 만들어 넣는다. 값이 바뀌면 기존 로그인은 모두 풀린다.

@@ -12,6 +12,7 @@ export interface Env {
   CORS_ORIGINS: string;
   DATABASE_URL: string;
   DIRECT_URL?: string;
+  DATABASE_POOL_MAX: number;
   JWT_SECRET: string;
   JWT_EXPIRES_IN: string;
   SUPABASE_URL?: string;
@@ -55,6 +56,7 @@ export function validateEnv(config: Record<string, unknown>): Env {
     CORS_ORIGINS: str(config.CORS_ORIGINS, "http://localhost:20001"),
     DATABASE_URL: str(config.DATABASE_URL, ""),
     DIRECT_URL: optionalStr(config.DIRECT_URL),
+    DATABASE_POOL_MAX: Number(config.DATABASE_POOL_MAX ?? 10),
     JWT_SECRET: str(config.JWT_SECRET, ""),
     JWT_EXPIRES_IN: str(config.JWT_EXPIRES_IN, "30d"),
     SUPABASE_URL: optionalStr(config.SUPABASE_URL),

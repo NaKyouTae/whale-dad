@@ -21,7 +21,7 @@ export class SupabaseService {
   constructor(private readonly config: ConfigService) {
     const url = this.config.get<string>("SUPABASE_URL");
     const key = this.config.get<string>("SUPABASE_SERVICE_ROLE_KEY");
-    this.bucket = this.config.get<string>("SUPABASE_STORAGE_BUCKET") ?? "whale-dad";
+    this.bucket = this.config.get<string>("SUPABASE_STORAGE_BUCKET") || "whale-dad";
 
     if (url && key) {
       this.client = createClient(url, key, {

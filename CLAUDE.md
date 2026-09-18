@@ -87,6 +87,9 @@ Turborepo + pnpm 모노레포:
 - **React Compiler 린트 규칙이 켜져 있다** (`react-hooks/purity`, `react-hooks/set-state-in-effect`).
   effect 안에서 setState 로 props→state 를 동기화하지 말고 호출부에서 `key` 로 리마운트할 것.
   규칙을 끄지 말 것
+- **환경변수 폴백에 `??` 를 쓰지 말 것.** Render 등은 빈 칸을 변수 삭제가 아니라 **빈 문자열**로
+  넣기 때문에 `process.env.X ?? "기본값"` 이 `""` 가 된다. `src/config/env.ts` 의
+  `envValue` / `envString` / `envNumber` 를 쓰고, ConfigService 쪽은 `||` 를 쓴다
 - 환경변수를 추가하면 `apps/server/src/config/env.validation.ts` 와 `.env.example`,
   `render.yaml` 을 함께 갱신할 것
 
