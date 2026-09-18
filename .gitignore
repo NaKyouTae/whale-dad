@@ -1,0 +1,39 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# build output
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# turbo
+.turbo/
+
+# testing
+coverage/
+
+# env
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# editors / os
+.DS_Store
+.idea/
+*.swp
+
+# vercel
+.vercel
+
+# prisma
+apps/server/prisma/*.db

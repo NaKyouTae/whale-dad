@@ -1,0 +1,26 @@
+# 로컬 개발용 PostgreSQL.
+# 운영은 Supabase 를 쓰고, 이건 로컬에서 바로 돌려보기 위한 것.
+#   pnpm db:up    # 시작
+#   pnpm db:down  # 정지 (데이터 유지)
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: whale-dad-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: whaledad
+      POSTGRES_PASSWORD: whaledad
+      POSTGRES_DB: whaledad
+      TZ: Asia/Seoul
+    volumes:
+      - whale-dad-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U whaledad -d whaledad"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  whale-dad-pgdata:

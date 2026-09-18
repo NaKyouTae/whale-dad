@@ -1,0 +1,54 @@
+{
+  "name": "whale-dad",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "dev:server": "turbo run dev --filter=@whale-dad/server",
+    "dev:web": "turbo run dev --filter=@whale-dad/web",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,json,md,css}\"",
+    "prepare": "husky",
+    "clean": "turbo run clean && rimraf node_modules",
+    "db:up": "docker compose up -d --wait postgres",
+    "db:down": "docker compose stop postgres",
+    "db:reset": "docker compose down -v postgres",
+    "db:generate": "pnpm --filter @whale-dad/server db:generate",
+    "db:migrate": "pnpm --filter @whale-dad/server db:migrate",
+    "db:push": "pnpm --filter @whale-dad/server db:push",
+    "db:seed": "pnpm --filter @whale-dad/server db:seed",
+    "db:studio": "pnpm --filter @whale-dad/server db:studio"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.2",
+    "prettier": "^3.9.8",
+    "rimraf": "^6.0.1",
+    "turbo": "^2.10.13",
+    "typescript": "^5.9.3"
+  },
+  "lint-staged": {
+    "apps/server/**/*.ts": [
+      "prettier --write",
+      "pnpm --filter @whale-dad/server exec eslint --max-warnings 0"
+    ],
+    "apps/web/**/*.{ts,tsx}": [
+      "prettier --write",
+      "pnpm --filter @whale-dad/web exec eslint --max-warnings 0"
+    ],
+    "packages/shared/**/*.ts": [
+      "prettier --write"
+    ],
+    "*.{json,mjs,css,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
+}

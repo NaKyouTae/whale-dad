@@ -1,0 +1,57 @@
+// whale-dad — Prisma 스키마
+// DB: 로컬 PostgreSQL(docker-compose) / 운영 Supabase
+// 연결 URL 은 prisma.config.ts(CLI) / PrismaService(런타임) 에서 주입한다.
+// 변경 후: pnpm db:migrate (dev) / pnpm db:deploy (prod)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── 사용자 ──
+// 계정(username) + 비밀번호로 로그인한다. username 이 곧 표시 이름이다.
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  /// 로그인 계정 = 화면에 보이는 이름
+  username     String   @unique
+  /// scrypt 해시 (`scrypt$<salt>$<hash>`)
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(MEMBER)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  bossKills BossChannel[] @relation("BossChannelLastKilledBy")
+
+  @@index([createdAt])
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  MEMBER
+}
+
+// ── 여두목 보스 채널 ──
+// 채널 목록 자체를 DB 로 관리해 게임 패치로 채널 수가 바뀌어도 수동 조정할 수 있게 한다.
+// 출현 시각(처치 +3h)은 저장하지 않고 lastKilledAt 에서 계산한다.
+model BossChannel {
+  id           String    @id @default(uuid()) @db.Uuid
+  /// 게임 내 채널 번호 (기본 1 ~ 231)
+  channel      Int       @unique
+  /// 마지막 처치 시각. null 이면 아직 기록 없음
+  lastKilledAt DateTime? @map("last_killed_at")
+  /// 마지막으로 처치를 기록한 계정. 계정이 지워져도 타이머는 남긴다
+  lastKilledById String? @map("last_killed_by_id") @db.Uuid
+  lastKilledBy   User?   @relation("BossChannelLastKilledBy", fields: [lastKilledById], references: [id], onDelete: SetNull)
+  memo         String?
+  /// 목록에서 감출 채널은 false
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([isActive, channel])
+  @@map("boss_channels")
+}

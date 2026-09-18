@@ -1,0 +1,63 @@
+# Render 배포용 이미지.
+#   빌드: docker build -f Dockerfile.render -t whale-dad-server .
+#   기동 시 prisma migrate deploy 를 먼저 돌린 뒤 서버를 띄운다.
+
+# ── Build Stage ──
+FROM node:22-alpine AS builder
+
+RUN apk add --no-cache libc6-compat openssl python3 make g++
+RUN corepack enable
+
+WORKDIR /build
+
+# pnpm workspace 매니페스트만 먼저 복사 → 의존성 캐시 레이어
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/server/package.json apps/server/package.json
+COPY packages/shared/package.json packages/shared/package.json
+
+# nest build 에 devDependencies 가 필요하므로 전체 설치
+RUN pnpm install --filter @whale-dad/server... --frozen-lockfile
+
+# 소스 복사
+COPY packages/shared packages/shared
+COPY apps/server apps/server
+
+# 공유 패키지 먼저 빌드 (server 가 상수를 런타임에도 가져다 쓴다)
+RUN pnpm --filter @whale-dad/shared build
+
+# Prisma Client 생성 + NestJS 빌드
+RUN pnpm --filter @whale-dad/server exec prisma generate
+RUN pnpm --filter @whale-dad/server exec nest build
+
+# 프로덕션 의존성만 평평한 node_modules 로 추출
+RUN pnpm --filter @whale-dad/server --legacy deploy --prod /prod/server
+RUN cd /prod/server && node node_modules/prisma/build/index.js generate
+
+# 참고: prisma 7 은 CLI 에 studio / dev 를 함께 묶어 배포한다.
+# 이 패키지들을 지우면 migrate deploy 진입 단계에서 require 가 실패하므로 그대로 둔다.
+
+# ── Runtime Stage ──
+FROM node:22-alpine
+
+RUN apk add --no-cache tzdata openssl
+ENV TZ=Asia/Seoul
+ENV NODE_ENV=production
+
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
+
+WORKDIR /app
+
+# chown 은 COPY 에서 함께 처리한다.
+# 따로 `RUN chown -R` 을 쓰면 트리 전체가 새 레이어로 복제돼 이미지가 두 배가 된다.
+COPY --from=builder --chown=appuser:appgroup /build/apps/server/dist ./dist
+COPY --from=builder --chown=appuser:appgroup /prod/server/node_modules ./node_modules
+COPY --from=builder --chown=appuser:appgroup /prod/server/package.json ./package.json
+COPY --from=builder --chown=appuser:appgroup /prod/server/prisma ./prisma
+COPY --from=builder --chown=appuser:appgroup /prod/server/prisma.config.ts ./prisma.config.ts
+
+USER appuser
+
+EXPOSE 20000
+
+CMD ["sh", "-c", "echo '--- prisma migrate deploy ---' && node node_modules/prisma/build/index.js migrate deploy && echo '--- starting nest server ---' && node dist/main.js"]

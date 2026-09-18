@@ -1,0 +1,65 @@
+# Render Blueprint — 대시보드에서 New → Blueprint 로 이 저장소를 연결하면 그대로 뜬다.
+# 프론트(apps/web)는 Vercel 에 배포한다 (Root Directory 를 apps/web 으로 지정).
+services:
+  # ── whale-dad NestJS 서버 ──
+  - type: web
+    name: whale-dad-server
+    runtime: docker
+    region: singapore
+    plan: starter
+    branch: main
+    autoDeploy: true
+    dockerfilePath: ./Dockerfile.render
+    # 컨테이너는 기동 시 prisma migrate deploy 를 먼저 돌린다.
+    healthCheckPath: /api/health
+    buildFilter:
+      paths:
+        - apps/server/**
+        - packages/shared/**
+        - Dockerfile.render
+        - render.yaml
+        - package.json
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+    envVars:
+      # Dockerfile EXPOSE / main.ts 의 기본 PORT 와 반드시 일치
+      - key: PORT
+        value: "20000"
+      - key: NODE_ENV
+        value: production
+      - key: TZ
+        value: Asia/Seoul
+
+      # ── CORS ──
+      # Vercel 도메인. 배포 후 실제 주소로 바꿀 것 (콤마로 여러 개 가능).
+      # 여기 값이 안 맞으면 프론트에서 쿠키가 안 붙어 로그인이 계속 풀린다.
+      - key: CORS_ORIGINS
+        value: "https://whale-dad.vercel.app"
+
+      # ── DB (필수) ──
+      # Supabase Dashboard > Project Settings > Database > Connection string
+      # DATABASE_URL : 런타임용 Transaction pooler (6543) + ?pgbouncer=true&connection_limit=1
+      - key: DATABASE_URL
+        sync: false
+      # DIRECT_URL : prisma migrate deploy 용 Direct connection (5432)
+      #   pooler 로 마이그레이션을 돌리면 실패하므로 반드시 따로 넣는다.
+      - key: DIRECT_URL
+        sync: false
+
+      # ── 인증 (필수) ──
+      # Render 가 배포 시 랜덤 값을 만들어 넣는다. 값이 바뀌면 기존 로그인은 모두 풀린다.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 30d
+
+      # ── Supabase Storage (선택) ──
+      # 비워두면 Storage 기능만 꺼지고 서버는 정상 기동한다.
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: whale-dad
