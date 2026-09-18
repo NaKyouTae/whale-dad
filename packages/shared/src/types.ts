@@ -53,8 +53,32 @@ export interface SignInInput {
 export type SignUpInput = SignInInput;
 
 // ─────────────────────────────────────────────
-// 여두목 보스
+// 보스 (여두목 / 천구)
 // ─────────────────────────────────────────────
+
+/**
+ * 보스 종류. Prisma 의 `BossType` enum 과 값이 같아야 한다.
+ * 채널 목록·타이머는 보스마다 따로 관리된다.
+ */
+export type BossType = "YEODUMOK" | "CHEONGU";
+
+/**
+ * 보스 하나의 고정 설정. 화면(메뉴·제목)과 서버(채널 시드·젠 간격)가 같은 값을 쓴다.
+ * 새 보스를 추가할 때 `BOSS_DEFINITIONS` 에 한 줄 더하면 라우트·API·시드가 모두 따라온다.
+ */
+export interface BossDefinition {
+  type: BossType;
+  /** URL 조각. 웹은 `/boss/<slug>`, API 는 `/api/bosses/<slug>/channels` */
+  slug: string;
+  /** 화면에 보이는 이름 */
+  name: string;
+  /** 기본 채널 범위 (포함). 실제 목록은 DB(boss_channels) 가 근거다 */
+  channelMin: number;
+  channelMax: number;
+  /** 처치 후 재출현까지 걸리는 시간 (시간 단위) */
+  spawnMinHours: number;
+  spawnMaxHours: number;
+}
 
 /**
  * 채널 등급. 처치 +3시간(출현 시각)까지 남은 시간으로 정한다.
@@ -75,6 +99,8 @@ export type BossChannelGrade =
 
 export interface BossChannel {
   id: string;
+  /** 어느 보스의 채널인지 */
+  bossType: BossType;
   /** 게임 내 채널 번호 */
   channel: number;
   /** 마지막 처치 시각 (ISO). 기록이 없으면 null */
@@ -94,6 +120,8 @@ export interface BossChannel {
 export interface BossChannelListResponse {
   /** 클라이언트와 서버의 시계 오차를 보정하기 위한 서버 기준 시각 (ISO) */
   serverNow: string;
+  /** 이 목록이 어느 보스의 것인지 (이름·젠 간격을 화면에서 그대로 쓴다) */
+  boss: BossDefinition;
   spawn: {
     minHours: number;
     maxHours: number;

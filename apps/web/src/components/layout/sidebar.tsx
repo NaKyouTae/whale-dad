@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Swords } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "./nav-items";
 
@@ -53,9 +53,7 @@ export function Sidebar({ expanded, onToggle, onCollapse }: SidebarProps) {
         <nav className="flex flex-col gap-1 p-2">
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-            const iconWidth = Math.round(
-              (item.iconSize.width / item.iconSize.height) * ICON_HEIGHT,
-            );
+            const FallbackIcon = item.fallbackIcon ?? Swords;
 
             return (
               <Link
@@ -76,14 +74,20 @@ export function Sidebar({ expanded, onToggle, onCollapse }: SidebarProps) {
                   style={{ width: RAIL_WIDTH - 16 }}
                   className="flex shrink-0 items-center justify-center"
                 >
-                  <Image
-                    src={item.icon}
-                    alt={item.label}
-                    width={iconWidth}
-                    height={ICON_HEIGHT}
-                    // 1.7KB 스프라이트라 최적화 파이프라인을 태울 이유가 없다.
-                    unoptimized
-                  />
+                  {item.icon && item.iconSize ? (
+                    <Image
+                      src={item.icon}
+                      alt={item.label}
+                      // 픽셀아트라 원본 비율을 지킨다
+                      width={Math.round((item.iconSize.width / item.iconSize.height) * ICON_HEIGHT)}
+                      height={ICON_HEIGHT}
+                      // 1.7KB 스프라이트라 최적화 파이프라인을 태울 이유가 없다.
+                      unoptimized
+                    />
+                  ) : (
+                    // 스프라이트가 없는 메뉴는 아이콘으로 자리를 채운다
+                    <FallbackIcon size={22} aria-hidden />
+                  )}
                 </span>
 
                 <span

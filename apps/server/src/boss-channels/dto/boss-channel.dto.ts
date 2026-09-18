@@ -3,6 +3,7 @@ import { Transform, Type } from "class-transformer";
 import {
   IsBoolean,
   IsDateString,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -10,11 +11,25 @@ import {
   MaxLength,
   Min,
 } from "class-validator";
+import { BOSS_DEFINITIONS } from "@whale-dad/shared";
 
 /** 채널 번호 상한. 게임 패치로 늘어날 수 있어 넉넉히 잡는다. */
 const CHANNEL_HARD_MAX = 9999;
 
-export class ChannelParamDto {
+/** URL 에 쓰는 보스 식별자. 목록에 없는 값은 라우트 단계에서 막는다. */
+const BOSS_SLUGS = BOSS_DEFINITIONS.map((boss) => boss.slug);
+
+export class BossParamDto {
+  @ApiProperty({ enum: BOSS_SLUGS, example: "yeodumok", description: "보스 식별자" })
+  @IsIn(BOSS_SLUGS, { message: "알 수 없는 보스입니다" })
+  boss!: string;
+}
+
+/**
+ * 보스 + 채널을 함께 받는 라우트용.
+ * ValidationPipe 가 forbidNonWhitelisted 라 두 파라미터를 모두 선언해야 한다.
+ */
+export class BossChannelParamDto extends BossParamDto {
   @ApiProperty({ example: 42, description: "게임 내 채널 번호" })
   @Type(() => Number)
   @IsInt()

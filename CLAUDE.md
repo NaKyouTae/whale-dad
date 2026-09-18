@@ -24,13 +24,23 @@ Turborepo + pnpm 모노레포:
 - React Hook Form + Zod — 폼 / @tanstack/react-query — 서버 상태
 - date-fns — 날짜 포맷
 
-## 기능 — 여두목 보스 (`/boss`)
+## 기능 — 보스 젠 타이머 (`/boss/<slug>`)
 
-메이플플래닛 여두목 보스 젠 타이머. **처치 후 3시간이 지나면 출현**하고, 채널은 기본 1~231.
+메이플플래닛 보스 젠 타이머. **처치 후 3시간이 지나면 출현**하고, 채널은 기본 0~231.
+현재 **여두목 보스(`yeodumok`) / 천구 보스(`cheongu`)** 두 개이고 화면은 완전히 같다.
 
+- **보스는 `packages/shared` 의 `BOSS_DEFINITIONS` 한 곳에서 정의한다.** 여기에 한 줄 더하고
+  Prisma `BossType` enum 에 같은 값을 넣으면 사이드바 메뉴 / 라우트(`/boss/<slug>`) /
+  API(`/api/bosses/<slug>/channels`) / 부팅 시드가 전부 따라온다. 보스 목록을 컴포넌트나
+  라우트에 따로 나열하지 말 것
+- **채널 타이머는 보스마다 완전히 분리된다** — 유니크 키가 `(bossType, channel)` 이라
+  같은 번호라도 다른 행이다. 서비스의 모든 조회/변경에 `bossType` 을 함께 넘길 것.
+  react-query 캐시 키도 보스별(`["boss-channels", slug]`)로 나눈다
+- 화면은 `components/boss/boss-board.tsx` 하나를 두 라우트가 공유한다. 보스가 늘어도
+  페이지를 복사하지 말 것
 - **채널 목록은 DB 테이블 `boss_channels`** — 하드코딩 금지. 게임 패치로 채널 수가 바뀌면
-  `POST /api/boss-channels/sync` 로 범위를 바꾼다. `packages/shared` 의 `BOSS_CHANNEL_MIN/MAX` 는
-  시드와 UI 기본값일 뿐 실제 목록의 근거가 아니다
+  `POST /api/bosses/<slug>/channels/sync` 로 범위를 바꾼다. `BOSS_DEFINITIONS` 의
+  `channelMin/Max` 는 시드와 UI 기본값일 뿐 실제 목록의 근거가 아니다
 - **젠 시각은 저장하지 않는다** — `lastKilledAt` 만 저장하고 `earliestSpawnAt`(+3h) /
   `latestSpawnAt`(+5h) 은 서버가 계산해 내려준다. 재출현 간격은
   `BOSS_SPAWN_MIN_HOURS` / `BOSS_SPAWN_MAX_HOURS` 상수
@@ -38,18 +48,28 @@ Turborepo + pnpm 모노레포:
   `getTiming()` 으로 한다. 서버는 등급을 내려주지 않는다 — 폴링 없이 카운트다운이 살아 있어야 하므로
 - **등급 기준은 출현 시각(처치 +3h)까지 남은 시간** — 1시간 초과 안전 / 1시간 이하 주의 /
   10분 이하 위험 / 0 이하 출현. 경계값은 `BOSS_CAUTION_BEFORE_MS`, `BOSS_DANGER_BEFORE_MS` 상수
-- 등급의 라벨·설명·색은 전부 `lib/boss.ts` 의 `GRADE_LABEL` / `GRADE_DESCRIPTION` / `GRADE_STYLE`
-  한 곳에 있다. 카드와 ⓘ 기준표가 같은 값을 쓰므로 색을 컴포넌트에 직접 박지 말 것
+- 등급의 라벨·설명·색은 전부 `lib/boss.ts` 의 `GRADE_LABEL` / `GRADE_SHORT_LABEL` /
+  `gradeDescription()` / `GRADE_STYLE` 한 곳에 있다. 카드·ⓘ 기준표·통계 줄·필터 칩이 같은 값을
+  쓰므로 색을 컴포넌트에 직접 박지 말 것. `GRADE_STYLE` 의 `time` 은 **등급 배경 위**,
+  `label` 은 **일반 배경 위** 글자색이다 (출현만 배경을 꽉 채워 둘이 다르다)
 - **시계 오차 보정** — 목록 응답의 `serverNow` 를 `useNow(serverNow)` 에 넘겨 기기 시계가 틀어져도
   타이머가 맞도록 한다. 렌더 중에 `Date.now()` 를 호출하지 말 것 (React Compiler `purity` 규칙 위반)
 - 채널이 232개라 `ChannelCard` 는 `memo` 로 감싸 **표시되는 초가 바뀔 때만** 리렌더한다
-- **채널 위치는 채널 번호 순으로 고정** — 정렬/필터로 순서를 바꾸지 말 것. 채널을 눈으로 찾는
-  화면이라 위치가 움직이면 못 쓴다. 상태는 순서가 아니라 **카드 색**으로만 구분한다
-- 카드는 **채널 번호 + 타이머 두 줄**. 한 줄에 놓이는 개수는 반응형
+- **채널 위치는 채널 번호 순으로 고정** — **정렬로 순서를 바꾸지 말 것.** 채널을 눈으로 찾는
+  화면이라 위치가 움직이면 못 쓴다. 등급 필터·검색은 **보이는 채널을 줄이기만** 하고 순서는
+  그대로 둔다
+- 제목 밑에는 **등급별 채널 수(전체·미확인 포함)** 가 작은 글씨로, 그 밑에는 **등급 카테고리 칩 +
+  채널 번호 검색**이 온다. 통계 수치는 필터와 무관하게 늘 **전체 채널** 기준이어야 판단이 된다
+- 카드는 **채널 번호 + `등급 - 시간` 두 줄**. 한 줄에 놓이는 개수는 반응형
   (`grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10`) — 좁은 화면에서
-  가로 스크롤이 생기면 안 된다. 카드 최소 높이는 터치 영역 확보용 44px. 여기에 배지·버튼을 더 넣지 말 것.
+  가로 스크롤이 생기면 안 된다. 카드가 가장 좁아지는 구간은 모바일 4열이 아니라 **8열(md, 768px)**
+  이므로 두 번째 줄 글자 크기를 키울 때는 거기서 재 볼 것. 카드 최소 높이는 터치 영역 확보용 44px.
+  여기에 배지·버튼을 더 넣지 말 것.
   **카드 클릭은 확인 모달만 연다** — 클릭 한 번으로 바로 기록하면 실수로 눌렀을 때 타이머가
   날아가므로, 기록은 `KillConfirmDialog` 안에서만 일어나게 할 것
+- 모달에서 **처치 시각을 수기로 입력**할 수 있다 (놓친 처치를 나중에 적는 용도).
+  기본값·미래 검사는 `useNow()` 로 보정된 시각을 쓰고, 입력값을 매초 덮어쓰지 말 것 —
+  입력 도중에 값이 바뀌어 버린다
 - 처치자 이름은 채널 번호와 **같은 줄**에 붙인다 (두 줄 규칙을 깨지 않기 위해)
 
 ## 인증
@@ -121,7 +141,7 @@ pnpm lint         # 전체 lint (--max-warnings 0)
 pnpm typecheck    # 전체 타입 체크
 pnpm db:up        # 로컬 PostgreSQL (Docker) 실행
 pnpm db:migrate   # 마이그레이션 생성·적용
-pnpm db:seed      # 여두목 보스 채널 1~231 시드
+pnpm db:seed      # 보스별 채널 0~231 시드
 ```
 
 ## 커밋 훅

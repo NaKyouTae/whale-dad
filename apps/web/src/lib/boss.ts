@@ -87,6 +87,9 @@ export function formatDuration(ms: number): string {
   return days > 0 ? `${days}일 ${clock}` : clock;
 }
 
+/** 화면에 보이는 등급 순서 — 통계 줄, 필터 칩, 기준표가 모두 이 순서를 쓴다 */
+export const GRADES: BossChannelGrade[] = ["SAFE", "CAUTION", "DANGER", "SPAWNED", "UNKNOWN"];
+
 export const GRADE_LABEL: Record<BossChannelGrade, string> = {
   UNKNOWN: "기록 없음",
   SAFE: "안전",
@@ -95,23 +98,65 @@ export const GRADE_LABEL: Record<BossChannelGrade, string> = {
   SPAWNED: "출현",
 };
 
-export const GRADE_DESCRIPTION: Record<BossChannelGrade, string> = {
-  UNKNOWN: "처치 기록 없음",
-  SAFE: "처치 후 0~2시간",
-  CAUTION: "출현 1시간 전",
-  DANGER: "출현 10분 전",
-  SPAWNED: "처치 후 3시간 경과",
+/**
+ * 좁은 카드 안(등급 - 시간)과 통계 줄에 쓰는 짧은 이름.
+ * 모바일에서 한 줄에 "등급 - 00:00:00" 이 들어가야 하므로 2~3자로 맞춘다.
+ */
+export const GRADE_SHORT_LABEL: Record<BossChannelGrade, string> = {
+  UNKNOWN: "미확인",
+  SAFE: "안전",
+  CAUTION: "주의",
+  DANGER: "위험",
+  SPAWNED: "출현",
 };
 
-/** 등급별 색상 — 카드와 안내 표가 같은 값을 쓴다 */
+/**
+ * 등급 설명 — 젠 간격이 보스마다 다를 수 있어 시간 수치는 목록 응답의 spawn 에서 가져온다.
+ */
+export function gradeDescription(
+  grade: BossChannelGrade,
+  spawn: { minHours: number; maxHours: number },
+): string {
+  const cautionHours = BOSS_CAUTION_BEFORE_MS / 3_600_000;
+  const dangerMinutes = BOSS_DANGER_BEFORE_MS / 60_000;
+
+  switch (grade) {
+    case "UNKNOWN":
+      return "처치 기록 없음";
+    case "SAFE":
+      return `처치 후 0~${spawn.minHours - cautionHours}시간`;
+    case "CAUTION":
+      return `출현 ${cautionHours}시간 전`;
+    case "DANGER":
+      return `출현 ${dangerMinutes}분 전`;
+    case "SPAWNED":
+      return `처치 후 ${spawn.minHours}시간 경과`;
+  }
+}
+
+/**
+ * 등급별 색상 — 카드·기준표·통계·필터 칩이 모두 여기서 가져간다.
+ *
+ * `time` 은 **등급 배경 위**에 올라가는 글자색이고, `label` 은 **일반 배경 위**(통계 줄,
+ * 필터 칩)에 올라가는 글자색이다. 출현 카드만 배경을 꽉 채우므로 둘이 다르다.
+ */
 export const GRADE_STYLE: Record<
   BossChannelGrade,
-  { card: string; num: string; time: string; bar: string; swatch: string; focus: string }
+  {
+    card: string;
+    num: string;
+    time: string;
+    label: string;
+    bar: string;
+    swatch: string;
+    focus: string;
+  }
 > = {
   SAFE: {
     card: "border-safe-border bg-safe-bg hover:bg-safe-bg-hover",
     num: "text-grey-500",
     time: "text-safe-text",
+    label: "text-safe-text",
     bar: "bg-success",
     swatch: "border-safe-border bg-safe-bg",
     focus: "focus-visible:outline-safe-text",
@@ -120,6 +165,7 @@ export const GRADE_STYLE: Record<
     card: "border-caution-border bg-caution-bg hover:bg-caution-bg-hover",
     num: "text-grey-500",
     time: "text-caution-text",
+    label: "text-caution-text",
     bar: "bg-warning",
     swatch: "border-caution-border bg-caution-bg",
     focus: "focus-visible:outline-caution-text",
@@ -128,6 +174,7 @@ export const GRADE_STYLE: Record<
     card: "border-danger-border bg-danger-bg hover:bg-danger-bg-hover",
     num: "text-grey-500",
     time: "text-danger",
+    label: "text-danger",
     bar: "bg-danger",
     swatch: "border-danger-border bg-danger-bg",
     focus: "focus-visible:outline-danger",
@@ -137,6 +184,7 @@ export const GRADE_STYLE: Record<
     card: "border-brand-600 bg-brand-500 hover:bg-brand-600",
     num: "text-white/75",
     time: "text-white",
+    label: "text-brand-600 dark:text-brand-300",
     bar: "bg-transparent",
     swatch: "border-brand-600 bg-brand-500",
     focus: "focus-visible:outline-white",
@@ -145,6 +193,7 @@ export const GRADE_STYLE: Record<
     card: "border-grey-200 bg-grey-50 hover:bg-grey-100",
     num: "text-grey-400",
     time: "text-grey-400",
+    label: "text-grey-500",
     bar: "bg-transparent",
     swatch: "border-grey-200 bg-grey-50",
     focus: "focus-visible:outline-grey-500",

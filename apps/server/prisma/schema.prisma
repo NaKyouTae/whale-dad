@@ -34,13 +34,22 @@ enum UserRole {
   MEMBER
 }
 
-// ── 여두목 보스 채널 ──
+/// 보스 종류. 값은 packages/shared 의 `BossType` 과 같아야 한다.
+enum BossType {
+  YEODUMOK
+  CHEONGU
+}
+
+// ── 보스 채널 ──
 // 채널 목록 자체를 DB 로 관리해 게임 패치로 채널 수가 바뀌어도 수동 조정할 수 있게 한다.
 // 출현 시각(처치 +3h)은 저장하지 않고 lastKilledAt 에서 계산한다.
+// 채널 번호는 보스마다 따로 셈하므로 유니크 키는 (bossType, channel) 이다.
 model BossChannel {
   id           String    @id @default(uuid()) @db.Uuid
-  /// 게임 내 채널 번호 (기본 1 ~ 231)
-  channel      Int       @unique
+  /// 어느 보스의 채널인지. 기존 행은 전부 여두목이라 기본값을 둔다
+  bossType     BossType  @default(YEODUMOK) @map("boss_type")
+  /// 게임 내 채널 번호 (기본 0 ~ 231)
+  channel      Int
   /// 마지막 처치 시각. null 이면 아직 기록 없음
   lastKilledAt DateTime? @map("last_killed_at")
   /// 마지막으로 처치를 기록한 계정. 계정이 지워져도 타이머는 남긴다
@@ -52,6 +61,7 @@ model BossChannel {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  @@index([isActive, channel])
+  @@unique([bossType, channel])
+  @@index([bossType, isActive, channel])
   @@map("boss_channels")
 }

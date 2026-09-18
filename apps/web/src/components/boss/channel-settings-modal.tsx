@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { BOSS_CHANNEL_MAX, BOSS_CHANNEL_MIN } from "@whale-dad/shared";
-import type { AuthUser } from "@whale-dad/shared";
+import type { AuthUser, BossDefinition } from "@whale-dad/shared";
 import { Button, Input, Modal } from "@/components/ui";
 
 interface ChannelSettingsModalProps {
+  /** 어느 보스의 채널을 손보는지 — 기본 범위가 보스마다 다를 수 있다 */
+  boss: BossDefinition;
   activeCount: number;
   /** 로그인한 계정. 채널 변경은 로그인이 필요하다 */
   user: AuthUser | null;
@@ -23,6 +24,7 @@ interface ChannelSettingsModalProps {
  * 게임 패치로 채널 수가 늘거나 줄었을 때 사용.
  */
 export function ChannelSettingsModal({
+  boss,
   activeCount,
   user,
   onClose,
@@ -32,14 +34,14 @@ export function ChannelSettingsModal({
   result,
   error,
 }: ChannelSettingsModalProps) {
-  const [from, setFrom] = useState(String(BOSS_CHANNEL_MIN));
-  const [to, setTo] = useState(String(BOSS_CHANNEL_MAX));
+  const [from, setFrom] = useState(String(boss.channelMin));
+  const [to, setTo] = useState(String(boss.channelMax));
   const [deactivateOutside, setDeactivateOutside] = useState(true);
 
   return (
     <Modal
       title="채널 설정"
-      description={`현재 ${activeCount}개 채널`}
+      description={`${boss.name} · 현재 ${activeCount}개 채널`}
       onClose={onClose}
       footer={
         <>
@@ -66,7 +68,8 @@ export function ChannelSettingsModal({
       <div className="flex flex-col gap-3">
         <p className="text-caption text-grey-600">
           채널 목록은 DB에 저장돼요. 범위를 바꾼 뒤 적용하면 없는 채널은 새로 만들고, 범위 밖 채널은
-          목록에서 숨겨요. 이미 기록된 처치 시각은 그대로 둡니다.
+          목록에서 숨겨요. 이미 기록된 처치 시각은 그대로 둡니다. 다른 보스의 채널은 건드리지
+          않아요.
         </p>
 
         <div className="flex items-end gap-2">

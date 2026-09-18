@@ -3,7 +3,13 @@
 import { memo } from "react";
 import type { BossChannel } from "@whale-dad/shared";
 import { cn } from "@/lib/utils";
-import { formatDuration, GRADE_LABEL, GRADE_STYLE, type BossTiming } from "@/lib/boss";
+import {
+  formatDuration,
+  GRADE_LABEL,
+  GRADE_SHORT_LABEL,
+  GRADE_STYLE,
+  type BossTiming,
+} from "@/lib/boss";
 
 /**
  * 카드에는 **처치 후 흐른 시간**을 보여준다.
@@ -38,8 +44,8 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
         .filter(Boolean)
         .join(" · ")}
       className={cn(
-        // 모바일 터치 영역 확보(44px) + 좁은 화면에서 좌우 여백을 줄여 타이머가 잘리지 않게 한다
-        "press relative flex min-h-11 w-full flex-col items-center justify-center gap-0.5 rounded-sm border px-1.5 py-1.5 transition-colors sm:px-2",
+        // 모바일 터치 영역 확보(44px) + 좁은 화면에서 좌우 여백을 줄여 "등급 - 시간" 이 잘리지 않게 한다
+        "press relative flex min-h-11 w-full flex-col items-center justify-center gap-0.5 overflow-hidden rounded-sm border px-1 py-1.5 transition-colors sm:px-2",
         // 기본 포커스 링은 카드 바깥에 떠서 이중 테두리처럼 보인다.
         // 카드 안쪽에 그리고, 등급 배경과 대비되는 색을 쓴다.
         "focus-visible:outline-2 focus-visible:[outline-offset:-3px]",
@@ -60,8 +66,23 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
           </span>
         )}
       </span>
-      <span className={cn("text-[13px] leading-none font-bold tabular-nums", style.time)}>
-        {timeText(timing)}
+
+      {/*
+        두 번째 줄은 "등급 - 시간".
+        한 줄에 모두 들어가야 해서 등급은 짧은 이름을 쓰고 글자도 작다. 칸이 가장 좁은 구간은
+        4열(모바일)이 아니라 **8열(md, 768px)** 이라 lg 이전까지는 크기를 키우지 않는다.
+      */}
+      <span
+        className={cn(
+          "flex items-baseline gap-[3px] leading-none font-bold whitespace-nowrap",
+          style.time,
+        )}
+      >
+        <span className="text-[9px] lg:text-[10px]">{GRADE_SHORT_LABEL[timing.grade]}</span>
+        <span aria-hidden className="text-[9px] opacity-60">
+          -
+        </span>
+        <span className="text-[11px] tabular-nums lg:text-[12px]">{timeText(timing)}</span>
       </span>
 
       {/* 출현까지의 진행바 — 카드 맨 아래 2px 선이라 줄 수를 늘리지 않는다 */}
