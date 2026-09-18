@@ -1,4 +1,4 @@
-import { Dog, type LucideIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { BOSS_DEFINITIONS } from "@whale-dad/shared";
 
 export interface NavItem {
@@ -18,7 +18,7 @@ export interface NavItem {
  */
 const BOSS_ICONS: Record<string, Pick<NavItem, "icon" | "iconSize" | "fallbackIcon">> = {
   yeodumok: { icon: "/boss-yeodumok.webp", iconSize: { width: 46, height: 75 } },
-  cheongu: { fallbackIcon: Dog },
+  cheongu: { icon: "/boss-cheongu.webp", iconSize: { width: 101, height: 106 } },
 };
 
 /** 좌측 사이드바 메뉴 — 보스 목록 순서를 그대로 따른다 */
