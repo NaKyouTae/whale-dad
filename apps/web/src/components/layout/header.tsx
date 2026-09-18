@@ -2,11 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LogOut, UserRound } from "lucide-react";
+import { LogOut, Menu, UserRound, X } from "lucide-react";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { useCurrentUser, useSignOut } from "@/hooks/use-auth";
 
-export function Header() {
+interface HeaderProps {
+  menuOpen: boolean;
+  onToggleMenu: () => void;
+}
+
+export function Header({ menuOpen, onToggleMenu }: HeaderProps) {
   const { data: user, isPending } = useCurrentUser();
   const signOut = useSignOut();
   const [authOpen, setAuthOpen] = useState(false);
@@ -14,7 +19,18 @@ export function Header() {
   return (
     <>
       <header className="fixed inset-x-0 top-0 z-50 h-14 border-b border-grey-200 bg-white/85 backdrop-blur-sm">
-        <div className="flex h-full items-center px-4">
+        <div className="flex h-full items-center gap-1 px-3 sm:px-4">
+          {/* 모바일에는 레일이 없으므로 여기서 메뉴를 연다 */}
+          <button
+            type="button"
+            onClick={onToggleMenu}
+            aria-label={menuOpen ? "메뉴 닫기" : "메뉴 열기"}
+            aria-expanded={menuOpen}
+            className="press flex size-10 items-center justify-center rounded-sm text-grey-700 hover:bg-grey-100 sm:hidden"
+          >
+            {menuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+
           <Link href="/" className="press flex items-center gap-2 rounded-sm px-1 py-1">
             <span className="text-[18px]">🐋</span>
             <span className="text-heading text-grey-900">whale-dad</span>

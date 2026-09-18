@@ -7,14 +7,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "./nav-items";
 
-/** 접힌 레일 폭 — 본문이 항상 이만큼 비워둔다 */
+/** 접힌 레일 폭(px). sm 이상에서만 본문이 이만큼 비워둔다. */
 export const RAIL_WIDTH = 60;
-/** 펼쳤을 때 폭 — 본문 위에 겹쳐 뜨므로 레이아웃이 밀리지 않는다 */
-const PANEL_WIDTH = 216;
 /** 메뉴 아이콘 높이(px). 원본 비율(46x75)을 지켜 폭을 계산한다. */
 const ICON_HEIGHT = 34;
-
-const EASE = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
 
 interface SidebarProps {
   expanded: boolean;
@@ -22,13 +18,17 @@ interface SidebarProps {
   onCollapse: () => void;
 }
 
+/**
+ * 좌측 메뉴.
+ * - 모바일: 평소엔 화면 밖에 있고 헤더의 햄버거로 열린다 (좁은 화면에서 60px 을 아끼기 위해)
+ * - sm 이상: 아이콘만 보이는 레일로 늘 떠 있고, 경계선의 손잡이로 펼친다
+ */
 export function Sidebar({ expanded, onToggle, onCollapse }: SidebarProps) {
   const pathname = usePathname();
-  const width = expanded ? PANEL_WIDTH : RAIL_WIDTH;
 
   return (
     <>
-      {/* 펼쳤을 때만 깔리는 배경 — 바깥을 누르면 접힌다 */}
+      {/* 펼쳤을 때만 깔리는 배경 — 바깥을 누르면 닫힌다 */}
       <div
         aria-hidden
         onClick={onCollapse}
@@ -39,10 +39,14 @@ export function Sidebar({ expanded, onToggle, onCollapse }: SidebarProps) {
       />
 
       <aside
-        style={{ width, transitionTimingFunction: EASE }}
         className={cn(
-          "fixed top-14 bottom-0 left-0 z-40 overflow-hidden border-r border-grey-200 bg-white",
-          "transition-[width] duration-200",
+          "fixed top-14 bottom-0 left-0 z-40 w-54 overflow-hidden border-r border-grey-200 bg-white",
+          "transition-[width,transform] duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]",
+          // 모바일: 닫히면 화면 밖으로 완전히 치운다
+          expanded ? "translate-x-0" : "-translate-x-full",
+          // sm 이상: 늘 보이고, 폭만 레일 ↔ 패널로 바뀐다
+          "sm:translate-x-0",
+          expanded ? "sm:w-54" : "sm:w-15",
           expanded && "shadow-float",
         )}
       >
@@ -98,11 +102,15 @@ export function Sidebar({ expanded, onToggle, onCollapse }: SidebarProps) {
 
       {/*
         접기/펼치기 손잡이 — 사이드바 오른쪽 경계선 위, 세로 한가운데.
+        모바일에는 레일 자체가 없으므로 헤더의 햄버거가 그 역할을 한다.
         aside 가 overflow-hidden 이라 잘리지 않도록 형제로 두고 left 를 폭에 맞춰 따라가게 한다.
       */}
       <div
-        style={{ left: width, transitionTimingFunction: EASE }}
-        className="pointer-events-none fixed top-14 bottom-0 z-45 flex -translate-x-1/2 items-center transition-[left] duration-200"
+        className={cn(
+          "pointer-events-none fixed top-14 bottom-0 z-45 hidden -translate-x-1/2 items-center sm:flex",
+          "transition-[left] duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]",
+          expanded ? "left-54" : "left-15",
+        )}
       >
         <button
           type="button"
