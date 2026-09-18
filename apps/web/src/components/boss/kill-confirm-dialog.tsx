@@ -1,6 +1,6 @@
 "use client";
 
-import { LogIn } from "lucide-react";
+import { LogIn, RotateCcw } from "lucide-react";
 import type { AuthUser, BossChannel } from "@whale-dad/shared";
 import { Button, Modal } from "@/components/ui";
 import { formatDuration, GRADE_LABEL, GRADE_STYLE, type BossTiming } from "@/lib/boss";
@@ -36,9 +36,13 @@ interface KillConfirmDialogProps {
   onClose: () => void;
   /** 지금 처치한 것으로 기록 */
   onKillNow: (channel: number) => void;
+  /** 처치 기록을 지워 타이머를 되돌린다 */
+  onReset: (channel: number) => void;
   /** 로그인 모달 열기 */
   onRequestSignIn: () => void;
   busy?: boolean;
+  /** 기록/초기화가 실패했을 때의 오류 */
+  error?: unknown;
 }
 
 /**
@@ -51,8 +55,10 @@ export function KillConfirmDialog({
   user,
   onClose,
   onKillNow,
+  onReset,
   onRequestSignIn,
   busy,
+  error,
 }: KillConfirmDialogProps) {
   const style = GRADE_STYLE[timing.grade];
   const killedAt = killedAtText(channel);
@@ -79,9 +85,21 @@ export function KillConfirmDialog({
             </Button>
           )}
 
-          <Button variant="secondary" full onClick={onClose}>
-            닫기
-          </Button>
+          <div className="flex gap-2">
+            {/* 기록이 있고 로그인한 경우에만 되돌릴 수 있다 */}
+            <Button
+              variant="outline"
+              full
+              disabled={busy || !user || !channel.lastKilledAt}
+              onClick={() => onReset(channel.channel)}
+            >
+              <RotateCcw size={14} />
+              타이머 초기화
+            </Button>
+            <Button variant="secondary" full onClick={onClose}>
+              닫기
+            </Button>
+          </div>
         </div>
       }
     >
@@ -109,6 +127,13 @@ export function KillConfirmDialog({
           <p className="text-caption text-grey-600">
             처치를 기록하려면 <b className="text-grey-800">로그인</b>이 필요해요. 계정이 없다면
             로그인 창에서 회원가입하면 바로 시작할 수 있어요.
+          </p>
+        )}
+
+        {/* 실패를 조용히 넘기면 눌러도 아무 일도 안 일어나는 것처럼 보인다 */}
+        {error != null && (
+          <p role="alert" className="text-caption text-danger">
+            {error instanceof Error ? error.message : "잠시 후 다시 시도해 주세요"}
           </p>
         )}
       </div>

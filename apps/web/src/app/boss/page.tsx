@@ -9,7 +9,12 @@ import { KillConfirmDialog } from "@/components/boss/kill-confirm-dialog";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { useCurrentUser } from "@/hooks/use-auth";
 import { useNow } from "@/hooks/use-now";
-import { useBossChannels, useRecordKill, useSyncChannels } from "@/hooks/use-boss-channels";
+import {
+  useBossChannels,
+  useRecordKill,
+  useResetTimer,
+  useSyncChannels,
+} from "@/hooks/use-boss-channels";
 import { getTiming } from "@/lib/boss";
 import { cn } from "@/lib/utils";
 import { ApiErrorCard } from "@/components/boss/api-error-card";
@@ -24,6 +29,7 @@ export default function BossPage() {
   const { data, isPending, isError, error } = useBossChannels();
   const { data: user } = useCurrentUser();
   const recordKill = useRecordKill();
+  const resetTimer = useResetTimer();
   const syncChannels = useSyncChannels();
 
   const [openedId, setOpenedId] = useState<string | null>(null);
@@ -39,7 +45,7 @@ export default function BossPage() {
     [data, now],
   );
 
-  const busy = recordKill.isPending;
+  const busy = recordKill.isPending || resetTimer.isPending;
   // 모달이 열려 있는 동안에도 카운트다운이 계속 흐르도록 rows 에서 매초 다시 집어온다.
   const opened = openedId ? rows.find((row) => row.channel.id === openedId) : undefined;
 
@@ -100,9 +106,11 @@ export default function BossPage() {
           busy={busy}
           onClose={() => setOpenedId(null)}
           user={user ?? null}
+          error={recordKill.error ?? resetTimer.error}
           onKillNow={(ch) =>
             recordKill.mutate({ channel: ch }, { onSuccess: () => setOpenedId(null) })
           }
+          onReset={(ch) => resetTimer.mutate(ch, { onSuccess: () => setOpenedId(null) })}
           onRequestSignIn={() => {
             setOpenedId(null);
             setAuthOpen(true);
@@ -115,8 +123,14 @@ export default function BossPage() {
       {settingsOpen && (
         <ChannelSettingsModal
           activeCount={data.channels.length}
+          user={user ?? null}
           busy={syncChannels.isPending}
+          error={syncChannels.error}
           onClose={() => setSettingsOpen(false)}
+          onRequestSignIn={() => {
+            setSettingsOpen(false);
+            setAuthOpen(true);
+          }}
           onSync={(input) => syncChannels.mutate(input)}
           result={
             syncChannels.data

@@ -36,7 +36,18 @@ export function useRecordKill() {
   });
 }
 
-/** 채널 범위 일괄 동기화 (예: 1~231) */
+/** 타이머 초기화 — 처치 기록을 지운다 */
+export function useResetTimer() {
+  const invalidate = useInvalidate();
+
+  return useMutation({
+    mutationFn: (channel: number) =>
+      api<BossChannel>(`/boss-channels/${channel}/kill`, { method: "DELETE" }),
+    onSuccess: invalidate,
+  });
+}
+
+/** 채널 범위 일괄 동기화 (예: 0~231) */
 export function useSyncChannels() {
   const invalidate = useInvalidate();
 
