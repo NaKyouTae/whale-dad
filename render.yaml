@@ -31,10 +31,11 @@ services:
         value: Asia/Seoul
 
       # ── CORS ──
-      # Vercel 도메인. 배포 후 실제 주소로 바꿀 것 (콤마로 여러 개 가능).
-      # 여기 값이 안 맞으면 프론트에서 쿠키가 안 붙어 로그인이 계속 풀린다.
+      # Vercel 도메인 (콤마로 여러 개 가능).
+      # 여기 값이 안 맞으면 프론트 요청이 CORS 로 막히고 쿠키도 안 붙는다.
+      # blueprint 의 value 는 대시보드 값을 덮어쓰므로 도메인이 바뀌면 여기도 같이 고칠 것.
       - key: CORS_ORIGINS
-        value: "https://whale-dad.vercel.app"
+        value: "https://whale-dad-web.vercel.app"
 
       # ── DB (필수) ──
       # Supabase Dashboard > Connect > Session pooler 의 문자열을 두 값에 똑같이 넣는다.

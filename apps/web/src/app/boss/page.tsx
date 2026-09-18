@@ -1,17 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertCircle, Loader2, Settings2 } from "lucide-react";
+import { Loader2, Settings2 } from "lucide-react";
 import { ChannelCard } from "@/components/boss/channel-card";
 import { ChannelSettingsModal } from "@/components/boss/channel-settings-modal";
 import { GradeLegend } from "@/components/boss/grade-legend";
 import { KillConfirmDialog } from "@/components/boss/kill-confirm-dialog";
 import { AuthModal } from "@/components/auth/auth-modal";
-import { Card } from "@/components/ui";
 import { useCurrentUser } from "@/hooks/use-auth";
 import { useNow } from "@/hooks/use-now";
 import { useBossChannels, useRecordKill, useSyncChannels } from "@/hooks/use-boss-channels";
 import { getTiming } from "@/lib/boss";
+import { ApiErrorCard } from "@/components/boss/api-error-card";
 
 /** 한 줄에 보여줄 채널 수 */
 const COLUMNS = 10;
@@ -51,29 +51,7 @@ export default function BossPage() {
   }
 
   if (isError) {
-    return (
-      <Card className="flex items-start gap-3 border-[#ffd9dd] bg-[#fff7f8]">
-        <AlertCircle className="mt-0.5 shrink-0 text-danger" size={18} />
-        <div>
-          <p className="text-heading text-grey-900">채널을 불러오지 못했어요</p>
-          <p className="mt-1 text-caption text-grey-600">
-            {error instanceof Error ? error.message : "알 수 없는 오류"}
-          </p>
-          <ol className="mt-2 flex list-decimal flex-col gap-0.5 pl-4 text-caption text-grey-500">
-            <li>
-              DB 실행: <code className="text-grey-700">pnpm db:up</code>
-            </li>
-            <li>
-              스키마·시드:{" "}
-              <code className="text-grey-700">pnpm db:migrate &amp;&amp; pnpm db:seed</code>
-            </li>
-            <li>
-              서버 실행: <code className="text-grey-700">pnpm dev:server</code> (포트 20000)
-            </li>
-          </ol>
-        </div>
-      </Card>
-    );
+    return <ApiErrorCard error={error} />;
   }
 
   return (

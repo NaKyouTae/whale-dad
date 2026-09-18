@@ -170,10 +170,26 @@ docker run --rm -p 20050:20000 \
 모노레포이므로 **Root Directory 를 `apps/web`** 으로 지정한다
 (`apps/web/vercel.json` 에 빌드/설치 명령이 들어 있다).
 
-환경변수:
+환경변수는 **`NEXT_PUBLIC_API_URL` 하나**다.
 
-- `NEXT_PUBLIC_API_URL` — 배포된 Render 서버 주소 (예: `https://whale-dad-server.onrender.com/api`)
-  로컬에서는 생략해도 `http://localhost:20000/api` 로 붙는다.
+```
+NEXT_PUBLIC_API_URL = https://<render-서비스명>.onrender.com/api
+```
+
+- **끝에 `/api` 를 붙인다** (서버 글로벌 프리픽스). 빠뜨리면 코드가 자동으로 붙여주지만,
+  값 자체를 정확히 넣는 편이 낫다
+- `NEXT_PUBLIC_*` 은 **빌드 시점에 번들에 박히므로**, 값을 추가·수정한 뒤에는 반드시 재배포한다
+- 로컬에서는 생략해도 `http://localhost:20000/api` 로 붙는다
+
+#### 로그인이 자꾸 풀린다면
+
+프론트(Vercel)와 서버(Render)는 도메인이 달라 쿠키가 **교차 사이트**로 오간다. 셋 다 맞아야 붙는다.
+
+1. Render 의 `CORS_ORIGINS` 가 **실제 Vercel 도메인과 정확히** 일치 (프로토콜 포함, 끝 슬래시 없이)
+2. 서버가 `NODE_ENV=production` 으로 떠 있을 것 — 그래야 쿠키가 `Secure; SameSite=None` 으로 나간다
+3. 양쪽 다 HTTPS
+
+Vercel 프리뷰 배포처럼 도메인이 매번 바뀌면 그 주소도 `CORS_ORIGINS` 에 콤마로 추가해야 한다.
 
 ## 커밋 훅
 
