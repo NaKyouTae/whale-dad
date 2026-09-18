@@ -17,11 +17,10 @@ export const MAX_PAGE_SIZE = 100;
 // 보스 (여두목 / 천구)
 // ─────────────────────────────────────────────
 
-/** 처치 후 재출현까지 걸리는 시간 (시간 단위) — 보스별로 다르면 정의에서 덮어쓴다 */
-export const BOSS_SPAWN_MIN_HOURS = 3;
-export const BOSS_SPAWN_MAX_HOURS = 5;
-
-/** 기본 채널 범위. 실제 채널 목록은 DB(boss_channels)에서 관리한다. */
+/**
+ * 기본 채널 범위. 실제 채널 목록은 DB(boss_channels)에서 관리한다.
+ * 재출현 간격은 보스마다 달라서 공통 상수가 없다 — 각 정의의 `spawnMinHours/MaxHours` 를 볼 것.
+ */
 export const BOSS_CHANNEL_MIN = 0;
 export const BOSS_CHANNEL_MAX = 231;
 
@@ -38,8 +37,9 @@ export const BOSS_DEFINITIONS: readonly BossDefinition[] = [
     name: "여두목 보스",
     channelMin: BOSS_CHANNEL_MIN,
     channelMax: BOSS_CHANNEL_MAX,
-    spawnMinHours: BOSS_SPAWN_MIN_HOURS,
-    spawnMaxHours: BOSS_SPAWN_MAX_HOURS,
+    // 처치 후 3~5시간
+    spawnMinHours: 3,
+    spawnMaxHours: 5,
   },
   {
     type: "CHEONGU",
@@ -47,8 +47,9 @@ export const BOSS_DEFINITIONS: readonly BossDefinition[] = [
     name: "천구 보스",
     channelMin: BOSS_CHANNEL_MIN,
     channelMax: BOSS_CHANNEL_MAX,
-    spawnMinHours: BOSS_SPAWN_MIN_HOURS,
-    spawnMaxHours: BOSS_SPAWN_MAX_HOURS,
+    // 처치 후 6~8시간 — 여두목보다 두 배 길다
+    spawnMinHours: 6,
+    spawnMaxHours: 8,
   },
 ];
 
@@ -66,7 +67,7 @@ export function findBossByType(type: BossType): BossDefinition | undefined {
 }
 
 /**
- * 등급 경계 — 출현 시각(처치 +3시간)까지 남은 시간 기준.
+ * 등급 경계 — **출현 시각까지 남은 시간** 기준. 보스마다 젠 간격이 달라도 경계는 같다.
  *   남음 > 1시간        → 안전
  *   10분 < 남음 ≤ 1시간 → 주의
  *   0 < 남음 ≤ 10분     → 위험

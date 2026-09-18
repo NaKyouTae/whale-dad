@@ -7,7 +7,7 @@ import {
 
 export interface BossTiming {
   grade: BossChannelGrade;
-  /** 출현(처치 +3시간)까지 남은 시간(ms). 이미 출현했거나 기록이 없으면 null */
+  /** 출현까지 남은 시간(ms). 이미 출현했거나 기록이 없으면 null */
   remainingMs: number | null;
   /** 출현 시각이 지난 뒤 흐른 시간(ms). 그 외에는 null */
   elapsedMs: number | null;
@@ -15,15 +15,16 @@ export interface BossTiming {
   progress: number | null;
   /** 처치 시각으로부터 흐른 시간(ms). 0 에서 시작해 계속 늘어난다 */
   sinceKillMs: number | null;
-  /** 처치 +3시간 (출현 시각) */
+  /** 출현 시각 (처치 + 보스별 spawnMinHours) */
   spawnAt: number | null;
 }
 
 /**
  * 채널 등급을 지금 시각 기준으로 계산한다.
  * 서버는 시각만 내려주고 이 계산은 클라이언트가 매초 다시 수행한다.
+ * 젠 간격은 보스마다 다르지만 서버가 준 `earliestSpawnAt` 만 보므로 여기서는 신경 쓰지 않는다.
  *
- * 기준 — 출현 시각(처치 +3시간)까지 남은 시간:
+ * 기준 — 출현 시각까지 남은 시간:
  *   > 1시간        안전
  *   ≤ 1시간        주의
  *   ≤ 10분         위험

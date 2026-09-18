@@ -81,20 +81,20 @@ export interface BossDefinition {
 }
 
 /**
- * 채널 등급. 처치 +3시간(출현 시각)까지 남은 시간으로 정한다.
+ * 채널 등급. 출현 시각(처치 + 보스별 `spawnMinHours`)까지 남은 시간으로 정한다.
  * 서버는 시각만 내려주고 등급 판정은 클라이언트가 매초 다시 계산한다
  * (서버 응답을 계속 폴링하지 않아도 카운트다운이 살아 있도록).
  */
 export type BossChannelGrade =
   /** 처치 기록 없음 */
   | "UNKNOWN"
-  /** 안전 — 처치 후 0~2시간 */
+  /** 안전 — 출현까지 1시간 넘게 남음 */
   | "SAFE"
   /** 주의 — 출현 1시간 전 */
   | "CAUTION"
   /** 위험 — 출현 10분 전 */
   | "DANGER"
-  /** 출현 — 처치 후 3시간 경과 */
+  /** 출현 — 출현 시각이 지남 */
   | "SPAWNED";
 
 export interface BossChannel {
@@ -107,9 +107,9 @@ export interface BossChannel {
   lastKilledAt: string | null;
   /** 마지막으로 처치를 기록한 계정. 계정이 지워졌으면 null */
   lastKilledBy: AuthUser | null;
-  /** lastKilledAt + 3h. 기록이 없으면 null */
+  /** lastKilledAt + 보스별 spawnMinHours. 기록이 없으면 null */
   earliestSpawnAt: string | null;
-  /** lastKilledAt + 5h. 기록이 없으면 null */
+  /** lastKilledAt + 보스별 spawnMaxHours. 기록이 없으면 null */
   latestSpawnAt: string | null;
   memo: string | null;
   /** 목록에서 감출 채널은 false */

@@ -13,7 +13,7 @@ import {
 
 /**
  * 카드에는 **처치 후 흐른 시간**을 보여준다.
- * 00:00:00 에서 시작해 계속 올라가고, 03:00:00 을 넘기면 출현 상태(색으로 구분)다.
+ * 00:00:00 에서 시작해 계속 올라가고, 그 보스의 최소 젠 시간을 넘기면 출현 상태(색으로 구분)다.
  */
 function timeText(timing: BossTiming): string {
   return timing.sinceKillMs === null ? "--:--:--" : formatDuration(timing.sinceKillMs);

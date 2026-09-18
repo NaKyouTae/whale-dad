@@ -26,8 +26,16 @@ Turborepo + pnpm 모노레포:
 
 ## 기능 — 보스 젠 타이머 (`/boss/<slug>`)
 
-메이플플래닛 보스 젠 타이머. **처치 후 3시간이 지나면 출현**하고, 채널은 기본 0~231.
-현재 **여두목 보스(`yeodumok`) / 천구 보스(`cheongu`)** 두 개이고 화면은 완전히 같다.
+메이플플래닛 보스 젠 타이머. 채널은 기본 0~231이고, 화면은 보스마다 완전히 같다.
+
+| 보스 | slug | 재출현 |
+| --- | --- | --- |
+| 여두목 보스 | `yeodumok` | 처치 후 3~5시간 |
+| 천구 보스 | `cheongu` | 처치 후 6~8시간 |
+
+- **젠 간격은 보스마다 다르다** — 공통 상수가 없으니 `3시간`을 코드나 문구에 박지 말 것.
+  서버는 `BOSS_DEFINITIONS` 의 `spawnMinHours/MaxHours` 로 계산하고, 화면은 목록 응답의
+  `spawn` 을 그대로 쓴다 (제목 문구·ⓘ 기준표 모두)
 
 - **보스는 `packages/shared` 의 `BOSS_DEFINITIONS` 한 곳에서 정의한다.** 여기에 한 줄 더하고
   Prisma `BossType` enum 에 같은 값을 넣으면 사이드바 메뉴 / 라우트(`/boss/<slug>`) /
@@ -41,13 +49,14 @@ Turborepo + pnpm 모노레포:
 - **채널 목록은 DB 테이블 `boss_channels`** — 하드코딩 금지. 게임 패치로 채널 수가 바뀌면
   `POST /api/bosses/<slug>/channels/sync` 로 범위를 바꾼다. `BOSS_DEFINITIONS` 의
   `channelMin/Max` 는 시드와 UI 기본값일 뿐 실제 목록의 근거가 아니다
-- **젠 시각은 저장하지 않는다** — `lastKilledAt` 만 저장하고 `earliestSpawnAt`(+3h) /
-  `latestSpawnAt`(+5h) 은 서버가 계산해 내려준다. 재출현 간격은
-  `BOSS_SPAWN_MIN_HOURS` / `BOSS_SPAWN_MAX_HOURS` 상수
+- **젠 시각은 저장하지 않는다** — `lastKilledAt` 만 저장하고 `earliestSpawnAt` /
+  `latestSpawnAt` 은 서버가 보스별 젠 간격을 더해 계산해 내려준다.
+  덕분에 젠 간격을 고치면 **이미 쌓인 기록에도 곧바로 반영된다** (마이그레이션 불필요)
 - **등급(SAFE/CAUTION/DANGER/SPAWNED/UNKNOWN) 판정은 클라이언트가 매초** `lib/boss.ts` 의
   `getTiming()` 으로 한다. 서버는 등급을 내려주지 않는다 — 폴링 없이 카운트다운이 살아 있어야 하므로
-- **등급 기준은 출현 시각(처치 +3h)까지 남은 시간** — 1시간 초과 안전 / 1시간 이하 주의 /
-  10분 이하 위험 / 0 이하 출현. 경계값은 `BOSS_CAUTION_BEFORE_MS`, `BOSS_DANGER_BEFORE_MS` 상수
+- **등급 기준은 출현 시각까지 남은 시간** — 1시간 초과 안전 / 1시간 이하 주의 /
+  10분 이하 위험 / 0 이하 출현. 경계값은 `BOSS_CAUTION_BEFORE_MS`, `BOSS_DANGER_BEFORE_MS` 상수이고
+  **젠 간격이 달라도 경계는 보스 공통**이다 (출현 직전 기준이라 그대로 통한다)
 - 등급의 라벨·설명·색은 전부 `lib/boss.ts` 의 `GRADE_LABEL` / `GRADE_SHORT_LABEL` /
   `gradeDescription()` / `GRADE_STYLE` 한 곳에 있다. 카드·ⓘ 기준표·통계 줄·필터 칩이 같은 값을
   쓰므로 색을 컴포넌트에 직접 박지 말 것. `GRADE_STYLE` 의 `time` 은 **등급 배경 위**,
