@@ -77,7 +77,7 @@ export function ChannelSettingsModal({
             type="checkbox"
             checked={deactivateOutside}
             onChange={(e) => setDeactivateOutside(e.target.checked)}
-            className="size-4 accent-[#3182f6]"
+            className="size-4 accent-brand-500"
           />
           범위 밖 채널은 목록에서 숨기기
         </label>

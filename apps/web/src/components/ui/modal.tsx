@@ -65,7 +65,7 @@ export function Modal({ title, description, onClose, children, footer, className
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-grey-900/40 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
       onClick={onClose}
       role="presentation"
     >

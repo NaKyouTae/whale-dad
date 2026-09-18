@@ -36,6 +36,21 @@
   --color-warning: #ffc845;
   --color-danger: #f04452;
 
+  /* 등급 색 — 카드/기준표가 공유한다. 다크 테마에서 값만 갈아끼운다. */
+  --color-safe-bg: #eafaf3;
+  --color-safe-bg-hover: #dcf5ea;
+  --color-safe-border: #b7ecd5;
+  --color-safe-text: #0e9e64;
+
+  --color-caution-bg: #fff8e6;
+  --color-caution-bg-hover: #fff2d4;
+  --color-caution-border: #ffe2a3;
+  --color-caution-text: #b88400;
+
+  --color-danger-bg: #fff0f1;
+  --color-danger-bg-hover: #ffe3e6;
+  --color-danger-border: #ffc9cf;
+
   /* Surface */
   --color-background: #ffffff;
   --color-surface: #f9fafb;
@@ -85,6 +100,53 @@
 
   /* Easing — 토스 특유의 부드러운 감속 */
   --ease-toss: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/*
+ * 다크 테마.
+ * 화면 대부분이 흰 면 + 회색 글씨로 짜여 있어, 흰색과 회색 계단을 통째로 뒤집는 편이
+ * 컴포넌트마다 dark: 클래스를 다는 것보다 일관되고 놓치는 곳이 없다.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+[data-theme="dark"] {
+  /* 카드·헤더·모달이 쓰는 bg-white 가 이 값을 따라간다 */
+  --color-white: #1c1f24;
+
+  --color-grey-50: #23272e;
+  --color-grey-100: #2b3037;
+  --color-grey-200: #363c45;
+  --color-grey-300: #454c57;
+  --color-grey-400: #6b7481;
+  --color-grey-500: #8b95a1;
+  --color-grey-600: #a6aeb9;
+  --color-grey-700: #c2c8d0;
+  --color-grey-800: #dde1e6;
+  --color-grey-900: #f2f4f6;
+
+  --color-background: #15181c;
+  --color-surface: #15181c;
+  --color-border: #363c45;
+  --color-foreground: #f2f4f6;
+  --color-muted: #8b95a1;
+
+  /* 밝은 파스텔은 어두운 배경에서 눈이 부시므로 톤을 낮춘다 */
+  --color-safe-bg: #12312a;
+  --color-safe-bg-hover: #163b32;
+  --color-safe-border: #1e5647;
+  --color-safe-text: #3ddc9a;
+
+  --color-caution-bg: #35290f;
+  --color-caution-bg-hover: #402f11;
+  --color-caution-border: #5c4718;
+  --color-caution-text: #f5c249;
+
+  --color-danger-bg: #3a1b20;
+  --color-danger-bg-hover: #452027;
+  --color-danger-border: #6b2f38;
+  --color-danger: #ff6b76;
+
+  color-scheme: dark;
 }
 
 @layer base {

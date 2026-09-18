@@ -13,6 +13,8 @@ export interface BossTiming {
   elapsedMs: number | null;
   /** 처치 → 출현 구간의 진행률 0~1. 기록이 없으면 null */
   progress: number | null;
+  /** 처치 시각으로부터 흐른 시간(ms). 0 에서 시작해 계속 늘어난다 */
+  sinceKillMs: number | null;
   /** 처치 +3시간 (출현 시각) */
   spawnAt: number | null;
 }
@@ -29,12 +31,20 @@ export interface BossTiming {
  */
 export function getTiming(channel: BossChannel, now: number): BossTiming {
   if (!channel.lastKilledAt || !channel.earliestSpawnAt) {
-    return { grade: "UNKNOWN", remainingMs: null, elapsedMs: null, progress: null, spawnAt: null };
+    return {
+      grade: "UNKNOWN",
+      remainingMs: null,
+      elapsedMs: null,
+      progress: null,
+      sinceKillMs: null,
+      spawnAt: null,
+    };
   }
 
   const killedAt = Date.parse(channel.lastKilledAt);
   const spawnAt = Date.parse(channel.earliestSpawnAt);
   const remainingMs = spawnAt - now;
+  const sinceKillMs = Math.max(0, now - killedAt);
 
   if (remainingMs <= 0) {
     return {
@@ -42,6 +52,7 @@ export function getTiming(channel: BossChannel, now: number): BossTiming {
       remainingMs: null,
       elapsedMs: -remainingMs,
       progress: 1,
+      sinceKillMs,
       spawnAt,
     };
   }
@@ -58,6 +69,7 @@ export function getTiming(channel: BossChannel, now: number): BossTiming {
     remainingMs,
     elapsedMs: null,
     progress: (now - killedAt) / (spawnAt - killedAt),
+    sinceKillMs,
     spawnAt,
   };
 }
@@ -97,27 +109,27 @@ export const GRADE_STYLE: Record<
   { card: string; num: string; time: string; bar: string; swatch: string; focus: string }
 > = {
   SAFE: {
-    card: "border-[#b7ecd5] bg-[#eafaf3] hover:bg-[#dcf5ea]",
+    card: "border-safe-border bg-safe-bg hover:bg-safe-bg-hover",
     num: "text-grey-500",
-    time: "text-[#0e9e64]",
-    bar: "bg-[#15c47e]",
-    swatch: "border-[#b7ecd5] bg-[#eafaf3]",
-    focus: "focus-visible:outline-[#0e9e64]",
+    time: "text-safe-text",
+    bar: "bg-success",
+    swatch: "border-safe-border bg-safe-bg",
+    focus: "focus-visible:outline-safe-text",
   },
   CAUTION: {
-    card: "border-[#ffe2a3] bg-[#fff8e6] hover:bg-[#fff2d4]",
+    card: "border-caution-border bg-caution-bg hover:bg-caution-bg-hover",
     num: "text-grey-500",
-    time: "text-[#b88400]",
-    bar: "bg-[#ffc845]",
-    swatch: "border-[#ffe2a3] bg-[#fff8e6]",
-    focus: "focus-visible:outline-[#b88400]",
+    time: "text-caution-text",
+    bar: "bg-warning",
+    swatch: "border-caution-border bg-caution-bg",
+    focus: "focus-visible:outline-caution-text",
   },
   DANGER: {
-    card: "border-[#ffc9cf] bg-[#fff0f1] hover:bg-[#ffe3e6]",
+    card: "border-danger-border bg-danger-bg hover:bg-danger-bg-hover",
     num: "text-grey-500",
     time: "text-danger",
     bar: "bg-danger",
-    swatch: "border-[#ffc9cf] bg-[#fff0f1]",
+    swatch: "border-danger-border bg-danger-bg",
     focus: "focus-visible:outline-danger",
   },
   SPAWNED: {

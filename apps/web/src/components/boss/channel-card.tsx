@@ -5,17 +5,12 @@ import type { BossChannel } from "@whale-dad/shared";
 import { cn } from "@/lib/utils";
 import { formatDuration, GRADE_LABEL, GRADE_STYLE, type BossTiming } from "@/lib/boss";
 
+/**
+ * 카드에는 **처치 후 흐른 시간**을 보여준다.
+ * 00:00:00 에서 시작해 계속 올라가고, 03:00:00 을 넘기면 출현 상태(색으로 구분)다.
+ */
 function timeText(timing: BossTiming): string {
-  switch (timing.grade) {
-    case "UNKNOWN":
-      return "--:--:--";
-    case "SPAWNED":
-      // 출현 시각이 지난 뒤 얼마나 흘렀는지
-      return `+${formatDuration(timing.elapsedMs ?? 0)}`;
-    default:
-      // 출현까지 남은 시간
-      return formatDuration(timing.remainingMs ?? 0);
-  }
+  return timing.sinceKillMs === null ? "--:--:--" : formatDuration(timing.sinceKillMs);
 }
 
 interface ChannelCardProps {
@@ -84,8 +79,8 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
  * 표시되는 값(초 단위 카운트다운)이 바뀔 때만 다시 그린다.
  */
 export const ChannelCard = memo(ChannelCardBase, (prev, next) => {
-  const prevSec = Math.floor((prev.timing.remainingMs ?? prev.timing.elapsedMs ?? 0) / 1000);
-  const nextSec = Math.floor((next.timing.remainingMs ?? next.timing.elapsedMs ?? 0) / 1000);
+  const prevSec = Math.floor((prev.timing.sinceKillMs ?? 0) / 1000);
+  const nextSec = Math.floor((next.timing.sinceKillMs ?? 0) / 1000);
 
   return (
     prevSec === nextSec &&

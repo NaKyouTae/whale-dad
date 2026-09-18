@@ -33,7 +33,7 @@ export function Sidebar({ expanded, onToggle, onCollapse }: SidebarProps) {
         aria-hidden
         onClick={onCollapse}
         className={cn(
-          "fixed inset-0 z-30 bg-grey-900/20 transition-opacity duration-200",
+          "fixed inset-0 z-30 bg-black/30 transition-opacity duration-200",
           expanded ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       />
@@ -67,7 +67,7 @@ export function Sidebar({ expanded, onToggle, onCollapse }: SidebarProps) {
                 className={cn(
                   "press flex h-12 items-center rounded-md text-body font-semibold",
                   active
-                    ? "bg-brand-50 text-brand-700"
+                    ? "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300"
                     : "text-grey-700 hover:bg-grey-100 active:bg-grey-200",
                 )}
               >

@@ -42,7 +42,7 @@ export function GradeLegend() {
         className={cn(
           "press flex size-9 items-center justify-center rounded-sm border",
           open
-            ? "border-brand-300 bg-brand-50 text-brand-600"
+            ? "border-brand-300 bg-brand-50 text-brand-600 dark:border-brand-700 dark:bg-brand-500/15 dark:text-brand-300"
             : "border-grey-200 bg-white text-grey-600 hover:bg-grey-50",
         )}
       >

@@ -16,7 +16,7 @@ export function ApiErrorCard({ error }: { error: unknown }) {
   const local = isLocalHost();
 
   return (
-    <Card className="flex items-start gap-3 border-[#ffd9dd] bg-[#fff7f8]">
+    <Card className="flex items-start gap-3 border-danger-border bg-danger-bg">
       <AlertCircle className="mt-0.5 shrink-0 text-danger" size={18} />
       <div className="min-w-0">
         <p className="text-heading text-grey-900">채널을 불러오지 못했어요</p>

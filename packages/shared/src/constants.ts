@@ -30,7 +30,7 @@ export const BOSS_CAUTION_BEFORE_MS = 60 * 60 * 1000;
 export const BOSS_DANGER_BEFORE_MS = 10 * 60 * 1000;
 
 /** 기본 채널 범위. 실제 채널 목록은 DB(boss_channels)에서 관리한다. */
-export const BOSS_CHANNEL_MIN = 1;
+export const BOSS_CHANNEL_MIN = 0;
 export const BOSS_CHANNEL_MAX = 231;
 
 export const HOUR_MS = 60 * 60 * 1000;

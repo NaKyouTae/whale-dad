@@ -62,6 +62,17 @@ Turborepo + pnpm 모노레포:
 - **읽기는 공개, 쓰기는 로그인 필요** — 새 엔드포인트를 만들 때 조회가 아니면 `@UseGuards(JwtAuthGuard)`
 - 프론트에서 로그인 상태는 `useCurrentUser()` 하나로만 읽는다. 로그인/가입은 `AuthModal` 한 곳
 
+## 테마 (다크/라이트)
+
+기본 다크. `globals.css` 의 `[data-theme="dark"]` 에서 **`--color-white` 와 grey 계단을 통째로 뒤집어**
+`bg-white` / `text-grey-*` 가 자동으로 따라오게 한다.
+
+- 새 색을 쓸 때 **hex 를 직접 박지 말 것** — 토큰(`bg-safe-bg`, `text-caution-text` 등)을 쓴다.
+  토큰이 없으면 `globals.css` 에 라이트/다크 쌍으로 추가한다
+- 뒤집히지 않는 브랜드 강조색(`bg-brand-50` 등)에만 `dark:` 를 단다
+- 테마 토글은 React state 를 쓰지 않는다 — 서버 렌더와 어긋나므로 두 아이콘을 모두 그리고
+  CSS(`dark:hidden`)로 감춘다
+
 ## 컨벤션
 
 - **디자인은 토스(Toss) 스타일** — 뉴트럴 그레이 + 단일 브랜드 블루(`brand-500` `#3182F6`),

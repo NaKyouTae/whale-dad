@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { LogOut, Menu, UserRound, X } from "lucide-react";
 import { AuthModal } from "@/components/auth/auth-modal";
+import { ThemeToggle } from "./theme-toggle";
 import { useCurrentUser, useSignOut } from "@/hooks/use-auth";
 
 interface HeaderProps {
@@ -18,7 +19,7 @@ export function Header({ menuOpen, onToggleMenu }: HeaderProps) {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 h-14 border-b border-grey-200 bg-white/85 backdrop-blur-sm">
+      <header className="fixed inset-x-0 top-0 z-50 h-14 border-b border-grey-200 bg-white/85 backdrop-blur-sm dark:bg-white/80">
         <div className="flex h-full items-center gap-1 px-3 sm:px-4">
           {/* 모바일에는 레일이 없으므로 여기서 메뉴를 연다 */}
           <button
@@ -37,6 +38,8 @@ export function Header({ menuOpen, onToggleMenu }: HeaderProps) {
           </Link>
 
           <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
+
             {isPending ? (
               // 로그인 여부를 아직 모르는 동안 버튼이 깜빡이지 않도록 자리만 잡아둔다
               <div className="h-9 w-20 animate-pulse rounded-sm bg-grey-100" />
