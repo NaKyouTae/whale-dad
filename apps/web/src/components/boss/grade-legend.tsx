@@ -53,7 +53,7 @@ export function GradeLegend() {
         <div
           role="dialog"
           aria-label="등급 기준"
-          className="absolute top-11 right-0 z-50 w-[260px] rounded-lg border border-grey-200 bg-white p-4 shadow-float"
+          className="absolute top-11 right-0 z-50 w-[min(260px,calc(100vw-2rem))] rounded-lg border border-grey-200 bg-white p-4 shadow-float"
         >
           <p className="text-heading text-grey-900">등급 기준</p>
           <p className="mt-0.5 text-caption text-grey-500">처치 후 3시간이 지나면 출현해요.</p>

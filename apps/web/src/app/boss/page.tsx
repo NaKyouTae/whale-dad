@@ -11,13 +11,14 @@ import { useCurrentUser } from "@/hooks/use-auth";
 import { useNow } from "@/hooks/use-now";
 import { useBossChannels, useRecordKill, useSyncChannels } from "@/hooks/use-boss-channels";
 import { getTiming } from "@/lib/boss";
+import { cn } from "@/lib/utils";
 import { ApiErrorCard } from "@/components/boss/api-error-card";
 
-/** 한 줄에 보여줄 채널 수 */
-const COLUMNS = 10;
-/** 카드 최소 폭 — 이보다 좁아지면 그리드를 가로 스크롤시킨다 */
-const MIN_CARD_WIDTH = 62;
-const GAP = 4;
+/**
+ * 한 줄에 보여줄 채널 수. 넓은 화면은 10개, 좁아질수록 줄여서
+ * 카드가 눌릴 만한 크기를 유지한다 (모바일에서 가로 스크롤이 생기지 않도록).
+ */
+const GRID_COLUMNS = "grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10";
 
 export default function BossPage() {
   const { data, isPending, isError, error } = useBossChannels();
@@ -57,7 +58,7 @@ export default function BossPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-title text-grey-900">여두목 보스</h1>
           <p className="text-caption text-grey-600">
             처치 후 {data.spawn.minHours}시간이 지나면 출현해요. 채널을 눌러 처치를 기록하세요.
@@ -79,24 +80,15 @@ export default function BossPage() {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <div
-          className="grid"
-          style={{
-            gridTemplateColumns: `repeat(${COLUMNS}, minmax(0, 1fr))`,
-            gap: GAP,
-            minWidth: COLUMNS * MIN_CARD_WIDTH + (COLUMNS - 1) * GAP,
-          }}
-        >
-          {rows.map(({ channel, timing }) => (
-            <ChannelCard
-              key={channel.id}
-              channel={channel}
-              timing={timing}
-              onOpen={(ch) => setOpenedId(ch.id)}
-            />
-          ))}
-        </div>
+      <div className={cn("grid gap-1", GRID_COLUMNS)}>
+        {rows.map(({ channel, timing }) => (
+          <ChannelCard
+            key={channel.id}
+            channel={channel}
+            timing={timing}
+            onOpen={(ch) => setOpenedId(ch.id)}
+          />
+        ))}
       </div>
 
       {opened && (

@@ -78,6 +78,10 @@ export function Modal({ title, description, onClose, children, footer, className
         onClick={(e) => e.stopPropagation()}
         className={cn(
           "w-full max-w-[440px] rounded-t-2xl bg-white p-5 shadow-float outline-none sm:rounded-2xl",
+          // 아래에서 올라오는 시트일 때 iPhone 홈 인디케이터에 버튼이 가리지 않도록
+          "pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-5",
+          // 내용이 길면 화면을 넘지 않게 스크롤
+          "max-h-[90dvh] overflow-y-auto",
           className,
         )}
       >

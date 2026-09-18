@@ -43,7 +43,8 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
         .filter(Boolean)
         .join(" · ")}
       className={cn(
-        "press relative flex w-full flex-col items-center gap-0.5 rounded-sm border px-2 py-1.5 transition-colors",
+        // 모바일 터치 영역 확보(44px) + 좁은 화면에서 좌우 여백을 줄여 타이머가 잘리지 않게 한다
+        "press relative flex min-h-11 w-full flex-col items-center justify-center gap-0.5 rounded-sm border px-1.5 py-1.5 transition-colors sm:px-2",
         // 기본 포커스 링은 카드 바깥에 떠서 이중 테두리처럼 보인다.
         // 카드 안쪽에 그리고, 등급 배경과 대비되는 색을 쓴다.
         "focus-visible:outline-2 focus-visible:[outline-offset:-3px]",
