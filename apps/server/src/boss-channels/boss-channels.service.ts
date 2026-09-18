@@ -33,23 +33,32 @@ export class BossChannelsService implements OnModuleInit {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * 채널이 하나도 없을 때만 기본 범위를 채운다.
-   * 첫 배포 뒤 시드를 따로 돌리지 않아도 화면이 비어 보이지 않게 하기 위한 것이고,
-   * 이미 채널이 있으면(= 사용자가 범위를 조정했을 수 있으면) 절대 손대지 않는다.
+   * 기본 범위(0~231)에서 **빠진 채널만** 채운다.
+   *
+   * 첫 배포에는 전체를 만들고, 이후 배포에는 대개 아무것도 하지 않는다.
+   * 이미 있는 채널은 활성/비활성 상태를 그대로 두므로, 화면에서 범위를 좁혀둔 설정을
+   * 배포할 때마다 되돌리지 않는다 (좁히기는 삭제가 아니라 비활성화로 동작한다).
    */
   async onModuleInit(): Promise<void> {
-    const existing = await this.prisma.bossChannel.count();
-    if (existing > 0) return;
+    const wanted = Array.from(
+      { length: BOSS_CHANNEL_MAX - BOSS_CHANNEL_MIN + 1 },
+      (_, i) => BOSS_CHANNEL_MIN + i,
+    );
+
+    const existing = await this.prisma.bossChannel.findMany({ select: { channel: true } });
+    const existingSet = new Set(existing.map((row) => row.channel));
+    const missing = wanted.filter((channel) => !existingSet.has(channel));
+
+    if (missing.length === 0) return;
 
     const { count } = await this.prisma.bossChannel.createMany({
-      data: Array.from({ length: BOSS_CHANNEL_MAX - BOSS_CHANNEL_MIN + 1 }, (_, i) => ({
-        channel: BOSS_CHANNEL_MIN + i,
-      })),
+      data: missing.map((channel) => ({ channel })),
       skipDuplicates: true,
     });
 
     this.logger.log(
-      `채널이 비어 있어 기본 범위를 생성했습니다 — ${BOSS_CHANNEL_MIN}~${BOSS_CHANNEL_MAX} (${count}개)`,
+      `기본 범위(${BOSS_CHANNEL_MIN}~${BOSS_CHANNEL_MAX})에서 빠진 채널을 생성했습니다 — ${count}개` +
+        (count <= 10 ? ` [${missing.join(", ")}]` : ""),
     );
   }
 

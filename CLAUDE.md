@@ -132,7 +132,9 @@ ESLint 는 `pnpm --filter <app> exec eslint` 로 돌려야 각 앱의 flat confi
 ## 배포
 
 - 서버 → **Render** (`render.yaml` + `Dockerfile.render`, 헬스체크 `/api/health`)
-  - 컨테이너 기동 순서: `prisma migrate deploy` → 채널 테이블이 비었을 때만 기본 범위 생성 → 서버 기동
+  - 컨테이너 기동 순서: `prisma migrate deploy` → 기본 범위에서 빠진 채널 생성 → 서버 기동
+  - 부팅 시드는 **없는 채널만 만든다**. 이미 있는 채널의 활성 여부는 손대지 말 것 —
+    화면에서 범위를 좁힌 설정이 배포마다 되돌아간다
   - `prisma` 는 런타임에 `migrate deploy` 를 돌려야 하므로 **dependencies** 에 있어야 한다
   - 런타임 스테이지에서 `RUN chown -R` 을 쓰지 말 것 — node_modules 트리가 통째로 레이어에 복제돼
     이미지가 두 배가 된다. `COPY --chown` 으로 처리한다
