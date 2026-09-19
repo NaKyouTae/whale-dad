@@ -4,7 +4,7 @@ import { memo } from "react";
 import type { BossChannel } from "@whale-dad/shared";
 import { cn } from "@/lib/utils";
 import {
-  formatDuration,
+  formatDurationShort,
   GRADE_LABEL,
   GRADE_SHORT_LABEL,
   GRADE_STYLE,
@@ -12,11 +12,19 @@ import {
 } from "@/lib/boss";
 
 /**
- * 카드에는 **처치 후 흐른 시간**을 보여준다.
- * 00:00:00 에서 시작해 계속 올라가고, 그 보스의 최소 젠 시간을 넘기면 출현 상태(색으로 구분)다.
+ * 카드에는 **처치 후 흐른 시간**을 분 단위로 보여준다.
+ * 00:00 에서 시작해 계속 올라가고, 그 보스의 최소 젠 시간을 넘기면 출현 상태(색으로 구분)다.
+ * 초는 일부러 뺐다 — 232개가 매초 바뀌면 읽히지 않는다 (정확한 초는 모달에서 본다).
  */
 function timeText(timing: BossTiming): string {
-  return timing.sinceKillMs === null ? "--:--:--" : formatDuration(timing.sinceKillMs);
+  return timing.sinceKillMs === null ? "--:--" : formatDurationShort(timing.sinceKillMs);
+}
+
+/** 한 줄짜리 "9월 19일 14:30" */
+function shortDateTime(iso: string): string {
+  const at = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${at.getMonth() + 1}월 ${at.getDate()}일 ${pad(at.getHours())}:${pad(at.getMinutes())}`;
 }
 
 interface ChannelCardProps {
@@ -39,6 +47,12 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
       title={[
         `${channel.channel}채널 — ${GRADE_LABEL[timing.grade]}`,
         channel.lastKilledBy ? `마지막 처치: ${channel.lastKilledBy.username}` : null,
+        // 카드는 두 줄을 지켜야 해서 확인 기록은 툴팁으로만 보여준다
+        channel.lastCheckedAt
+          ? `확인: ${shortDateTime(channel.lastCheckedAt)}` +
+            (channel.lastCheckedBy ? ` ${channel.lastCheckedBy.username}` : "") +
+            " — 보스 없었음"
+          : null,
         "누르면 처치 기록 창",
       ]
         .filter(Boolean)
@@ -68,9 +82,9 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
       </span>
 
       {/*
-        두 번째 줄은 "등급 - 시간".
-        한 줄에 모두 들어가야 해서 등급은 짧은 이름을 쓰고 글자도 작다. 칸이 가장 좁은 구간은
-        4열(모바일)이 아니라 **8열(md, 768px)** 이라 lg 이전까지는 크기를 키우지 않는다.
+        두 번째 줄은 "등급 - 시간". 칸이 가장 좁은 구간은 4열(모바일)이 아니라
+        **8열(md, 768px)** 이므로 글자를 키울 때는 거기서 재 볼 것.
+        (초를 뺀 "등급 - HH:MM" 은 여유가 있어 타이머를 13px 로 둔다)
       */}
       <span
         className={cn(
@@ -78,11 +92,11 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
           style.time,
         )}
       >
-        <span className="text-[9px] lg:text-[10px]">{GRADE_SHORT_LABEL[timing.grade]}</span>
-        <span aria-hidden className="text-[9px] opacity-60">
+        <span className="text-[10px]">{GRADE_SHORT_LABEL[timing.grade]}</span>
+        <span aria-hidden className="text-[10px] opacity-60">
           -
         </span>
-        <span className="text-[11px] tabular-nums lg:text-[12px]">{timeText(timing)}</span>
+        <span className="text-[13px] tabular-nums">{timeText(timing)}</span>
       </span>
 
       {/* 출현까지의 진행바 — 카드 맨 아래 2px 선이라 줄 수를 늘리지 않는다 */}
@@ -97,16 +111,18 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
 
 /**
  * 채널이 232개라 매초 전부 리렌더되면 부담이 크다.
- * 표시되는 값(초 단위 카운트다운)이 바뀔 때만 다시 그린다.
+ * 표시되는 값(분 단위 타이머)이 바뀔 때만 다시 그린다 — 등급이 바뀌는 순간은 별도로 잡으므로
+ * 위험/출현 전환은 분을 기다리지 않고 바로 반영된다.
  */
 export const ChannelCard = memo(ChannelCardBase, (prev, next) => {
-  const prevSec = Math.floor((prev.timing.sinceKillMs ?? 0) / 1000);
-  const nextSec = Math.floor((next.timing.sinceKillMs ?? 0) / 1000);
+  const prevMin = Math.floor((prev.timing.sinceKillMs ?? 0) / 60_000);
+  const nextMin = Math.floor((next.timing.sinceKillMs ?? 0) / 60_000);
 
   return (
-    prevSec === nextSec &&
+    prevMin === nextMin &&
     prev.timing.grade === next.timing.grade &&
     prev.channel.lastKilledAt === next.channel.lastKilledAt &&
-    prev.channel.lastKilledBy?.username === next.channel.lastKilledBy?.username
+    prev.channel.lastKilledBy?.username === next.channel.lastKilledBy?.username &&
+    prev.channel.lastCheckedAt === next.channel.lastCheckedAt
   );
 });

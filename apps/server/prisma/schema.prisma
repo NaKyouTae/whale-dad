@@ -23,7 +23,8 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  bossKills BossChannel[] @relation("BossChannelLastKilledBy")
+  bossKills  BossChannel[] @relation("BossChannelLastKilledBy")
+  bossChecks BossChannel[] @relation("BossChannelLastCheckedBy")
 
   @@index([createdAt])
   @@map("users")
@@ -55,6 +56,10 @@ model BossChannel {
   /// 마지막으로 처치를 기록한 계정. 계정이 지워져도 타이머는 남긴다
   lastKilledById String? @map("last_killed_by_id") @db.Uuid
   lastKilledBy   User?   @relation("BossChannelLastKilledBy", fields: [lastKilledById], references: [id], onDelete: SetNull)
+  /// 출현 시각이 지난 뒤 "가봤는데 없었다"고 확인한 시각. 처치를 새로 기록하면 지운다
+  lastCheckedAt   DateTime? @map("last_checked_at")
+  lastCheckedById String?   @map("last_checked_by_id") @db.Uuid
+  lastCheckedBy   User?     @relation("BossChannelLastCheckedBy", fields: [lastCheckedById], references: [id], onDelete: SetNull)
   memo         String?
   /// 목록에서 감출 채널은 false
   isActive     Boolean   @default(true) @map("is_active")

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, LogIn, RotateCcw } from "lucide-react";
+import { Clock, LogIn, RotateCcw, SearchX } from "lucide-react";
 import type { AuthUser, BossChannel } from "@whale-dad/shared";
 import { Button, Modal } from "@/components/ui";
 import { formatDuration, GRADE_LABEL, GRADE_STYLE, type BossTiming } from "@/lib/boss";
@@ -18,13 +18,11 @@ function currentStateText(timing: BossTiming): string {
   }
 }
 
-function killedAtText(channel: BossChannel): string | null {
-  if (!channel.lastKilledAt) return null;
-
-  const at = new Date(channel.lastKilledAt);
+function whenText(iso: string, by: { username: string } | null): string {
+  const at = new Date(iso);
   const when = `${at.getMonth() + 1}월 ${at.getDate()}일 ${pad(at.getHours())}:${pad(at.getMinutes())}`;
 
-  return channel.lastKilledBy ? `${when} · ${channel.lastKilledBy.username}` : when;
+  return by ? `${when} · ${by.username}` : when;
 }
 
 function pad(n: number): string {
@@ -50,6 +48,11 @@ interface KillConfirmDialogProps {
    * 처치 기록. `killedAt`(ISO)을 주면 그 시각으로, 없으면 지금으로 기록한다.
    */
   onKill: (channel: number, killedAt?: string) => void;
+  /**
+   * "가봤는데 보스가 없었다" 확인 기록. 타이머는 건드리지 않는다.
+   * `checkedAt`(ISO)을 주면 그 시각으로, 없으면 지금으로 기록한다.
+   */
+  onCheck: (channel: number, checkedAt?: string) => void;
   /** 처치 기록을 지워 타이머를 되돌린다 */
   onReset: (channel: number) => void;
   /** 로그인 모달 열기 */
@@ -72,13 +75,22 @@ export function KillConfirmDialog({
   user,
   onClose,
   onKill,
+  onCheck,
   onReset,
   onRequestSignIn,
   busy,
   error,
 }: KillConfirmDialogProps) {
   const style = GRADE_STYLE[timing.grade];
-  const killedAt = killedAtText(channel);
+  const killedAt = channel.lastKilledAt
+    ? whenText(channel.lastKilledAt, channel.lastKilledBy)
+    : null;
+  const checkedAt = channel.lastCheckedAt
+    ? whenText(channel.lastCheckedAt, channel.lastCheckedBy)
+    : null;
+
+  // 출현 시각이 지났을 때만 "가봤는데 없었다" 가 성립한다 (그 전엔 당연히 없다).
+  const canCheck = timing.grade === "SPAWNED";
 
   const [manual, setManual] = useState(false);
   // 열린 순간의 시각을 기본값으로 둔다. 매초 갱신하면 입력 중에 값이 바뀌어버린다.
@@ -93,6 +105,28 @@ export function KillConfirmDialog({
     : manualFuture
       ? "미래 시각은 기록할 수 없어요"
       : null;
+
+  // 확인 시각은 늘 입력창으로 받는다 — "언제 가봤는지" 가 이 기능의 핵심이라 기본값만 채워둔다.
+  const [checkValue, setCheckValue] = useState(() => toLocalInputValue(now));
+
+  const checkMs = checkValue === "" ? NaN : new Date(checkValue).getTime();
+  const checkInvalid = Number.isNaN(checkMs);
+  const checkFuture = !checkInvalid && checkMs > now + 60_000;
+  // 처치보다 앞선 확인은 앞 주기의 기록이라 지금 젠과 상관이 없다
+  const killedMs = channel.lastKilledAt ? Date.parse(channel.lastKilledAt) : null;
+  const checkBeforeKill = !checkInvalid && killedMs !== null && checkMs < killedMs;
+  const checkError = checkInvalid
+    ? "시각을 입력해 주세요"
+    : checkFuture
+      ? "미래 시각은 기록할 수 없어요"
+      : checkBeforeKill
+        ? "처치 시각보다 앞설 수 없어요"
+        : null;
+
+  const submitCheck = () => {
+    if (checkError) return;
+    onCheck(channel.channel, new Date(checkMs).toISOString());
+  };
 
   const submit = () => {
     if (!manual) {
@@ -157,6 +191,61 @@ export function KillConfirmDialog({
           <p className="text-caption text-grey-500">
             마지막 처치 <span className="font-semibold text-grey-700">{killedAt}</span>
           </p>
+        )}
+
+        {/*
+          출현 시각이 지나도 보스가 늘 나와 있지는 않다.
+          누가 언제 다녀갔는지 남겨 같은 채널을 여럿이 헛걸음하지 않게 한다.
+        */}
+        {canCheck && user && (
+          <div className="flex flex-col gap-2 rounded-md border border-grey-200 bg-grey-50 p-3">
+            <p className="flex items-center gap-1.5 text-caption font-semibold text-grey-700">
+              <SearchX size={14} className="text-grey-500" />
+              가봤는데 보스가 없었나요?
+            </p>
+
+            {checkedAt && (
+              <p className="text-caption text-grey-500">
+                마지막 확인 <span className="font-semibold text-grey-700">{checkedAt}</span>
+              </p>
+            )}
+
+            <div className="flex gap-2">
+              <input
+                type="datetime-local"
+                value={checkValue}
+                max={toLocalInputValue(now)}
+                onChange={(e) => setCheckValue(e.target.value)}
+                aria-label="확인한 시각"
+                aria-invalid={checkError ? true : undefined}
+                className={cn(
+                  "h-11 min-w-0 flex-1 rounded-sm border bg-white px-3 text-body text-grey-900 outline-none",
+                  checkError
+                    ? "border-danger focus:border-danger"
+                    : "border-grey-200 focus:border-brand-500",
+                )}
+              />
+              <Button
+                variant="outline"
+                disabled={busy || checkError !== null}
+                onClick={submitCheck}
+                className="shrink-0"
+              >
+                확인 기록
+              </Button>
+            </div>
+
+            {checkError ? (
+              <p role="alert" className="text-caption text-danger">
+                {checkError}
+              </p>
+            ) : (
+              <p className="text-caption text-grey-500">
+                다녀온 시각을 남겨두면 다른 사람이 같은 채널을 또 돌지 않아요. 타이머는 그대로
+                둡니다.
+              </p>
+            )}
+          </div>
         )}
 
         {user && (

@@ -41,6 +41,23 @@ export function useRecordKill(boss: BossDefinition) {
   });
 }
 
+/**
+ * 확인 기록 — "가봤는데 보스가 없었다".
+ * 처치가 아니므로 타이머는 그대로 두고 누가 언제 다녀갔는지만 남긴다.
+ */
+export function useRecordCheck(boss: BossDefinition) {
+  const invalidate = useInvalidate(boss.slug);
+
+  return useMutation({
+    mutationFn: ({ channel, checkedAt }: { channel: number; checkedAt?: string }) =>
+      api<BossChannel>(`${basePath(boss.slug)}/${channel}/check`, {
+        method: "POST",
+        body: JSON.stringify(checkedAt ? { checkedAt } : {}),
+      }),
+    onSuccess: invalidate,
+  });
+}
+
 /** 타이머 초기화 — 처치 기록을 지운다 */
 export function useResetTimer(boss: BossDefinition) {
   const invalidate = useInvalidate(boss.slug);

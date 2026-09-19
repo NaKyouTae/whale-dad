@@ -88,6 +88,23 @@ export function formatDuration(ms: number): string {
   return days > 0 ? `${days}일 ${clock}` : clock;
 }
 
+/**
+ * ms → "HH:MM" (24시간을 넘으면 "3일 02:30").
+ *
+ * 채널 카드용. 초까지 보여줘도 읽히지 않고, 매초 바뀌는 숫자가 232개면 눈만 아프다.
+ * 대신 카드가 **분이 바뀔 때만** 리렌더되므로 부담도 줄어든다.
+ */
+export function formatDurationShort(ms: number): string {
+  const totalMinutes = Math.max(0, Math.floor(ms / 60_000));
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+
+  const clock = [hours, minutes].map((n) => String(n).padStart(2, "0")).join(":");
+
+  return days > 0 ? `${days}일 ${clock}` : clock;
+}
+
 /** 화면에 보이는 등급 순서 — 통계 줄, 필터 칩, 기준표가 모두 이 순서를 쓴다 */
 export const GRADES: BossChannelGrade[] = ["SAFE", "CAUTION", "DANGER", "SPAWNED", "UNKNOWN"];
 

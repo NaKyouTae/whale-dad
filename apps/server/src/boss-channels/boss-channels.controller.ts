@@ -27,6 +27,7 @@ import {
   BossParamDto,
   CreateBossChannelDto,
   ListBossChannelsQueryDto,
+  RecordCheckDto,
   RecordKillDto,
   SyncBossChannelsDto,
   UpdateBossChannelDto,
@@ -79,6 +80,25 @@ export class BossChannelsController {
     @CurrentUser() user: AuthUser,
   ): Promise<BossChannel> {
     return this.service.recordKill(toBossType(params.boss), params.channel, user.id, dto.killedAt);
+  }
+
+  @Post(":channel/check")
+  @UseGuards(JwtAuthGuard)
+  @ApiCookieAuth()
+  @ApiOperation({
+    summary: "확인 기록 — 가봤는데 보스가 없었음 (타이머는 그대로) · 로그인 필요",
+  })
+  recordCheck(
+    @Param() params: BossChannelParamDto,
+    @Body() dto: RecordCheckDto,
+    @CurrentUser() user: AuthUser,
+  ): Promise<BossChannel> {
+    return this.service.recordCheck(
+      toBossType(params.boss),
+      params.channel,
+      user.id,
+      dto.checkedAt,
+    );
   }
 
   @Delete(":channel/kill")

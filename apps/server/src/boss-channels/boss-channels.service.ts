@@ -23,8 +23,14 @@ import type {
   UpdateBossChannelDto,
 } from "./dto/boss-channel.dto";
 
-/** 채널을 읽을 때 늘 같이 가져오는 처치자 정보 */
-const KILLED_BY = { lastKilledBy: { select: { id: true, username: true } } } as const;
+/** 채널을 읽을 때 늘 같이 가져오는 기록자 정보 (처치자 / 확인자) */
+const KILLED_BY = {
+  lastKilledBy: { select: { id: true, username: true } },
+  lastCheckedBy: { select: { id: true, username: true } },
+} as const;
+
+/** 새 젠 주기가 시작되면 "가봤는데 없었다" 기록은 의미가 없어지므로 함께 지운다 */
+const CLEAR_CHECK = { lastCheckedAt: null, lastCheckedById: null } as const;
 
 @Injectable()
 export class BossChannelsService implements OnModuleInit {
@@ -103,6 +109,7 @@ export class BossChannelsService implements OnModuleInit {
       data: {
         lastKilledAt: killedAt ? new Date(killedAt) : new Date(),
         lastKilledById: userId,
+        ...CLEAR_CHECK,
       },
       include: KILLED_BY,
     });
@@ -128,6 +135,8 @@ export class BossChannelsService implements OnModuleInit {
           lastKilledAt: dto.lastKilledAt === null ? null : new Date(dto.lastKilledAt),
           // 시각을 지우면 기록자도 함께 지운다
           lastKilledById: dto.lastKilledAt === null ? null : (userId ?? undefined),
+          // 처치 시각이 바뀌면 젠 주기가 달라지므로 확인 기록은 버린다
+          ...CLEAR_CHECK,
         }),
         ...(dto.memo !== undefined && { memo: dto.memo }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
@@ -144,7 +153,35 @@ export class BossChannelsService implements OnModuleInit {
 
     const row = await this.prisma.bossChannel.update({
       where: { bossType_channel: { bossType, channel } },
-      data: { lastKilledAt: null, lastKilledById: null },
+      data: { lastKilledAt: null, lastKilledById: null, ...CLEAR_CHECK },
+      include: KILLED_BY,
+    });
+
+    return this.toDto(row, boss);
+  }
+
+  /**
+   * "가봤는데 보스가 없더라" 확인 기록.
+   *
+   * 출현 시각이 지나도 보스가 늘 나와 있는 건 아니라서, 누가 언제 다녀갔는지 남겨
+   * 같은 채널을 여럿이 헛걸음하지 않게 한다. **타이머는 건드리지 않는다** —
+   * 확인은 처치가 아니므로 젠 주기를 다시 돌리면 안 된다.
+   */
+  async recordCheck(
+    bossType: BossType,
+    channel: number,
+    userId: string,
+    checkedAt?: string,
+  ): Promise<BossChannel> {
+    const boss = this.definition(bossType);
+    await this.ensureExists(bossType, channel);
+
+    const row = await this.prisma.bossChannel.update({
+      where: { bossType_channel: { bossType, channel } },
+      data: {
+        lastCheckedAt: checkedAt ? new Date(checkedAt) : new Date(),
+        lastCheckedById: userId,
+      },
       include: KILLED_BY,
     });
 
@@ -245,7 +282,10 @@ export class BossChannelsService implements OnModuleInit {
    * 등급(SAFE/CAUTION/DANGER/SPAWNED) 판정은 클라이언트가 매초 다시 하므로 여기서 하지 않는다.
    */
   private toDto(
-    row: BossChannelRow & { lastKilledBy: Pick<User, "id" | "username"> | null },
+    row: BossChannelRow & {
+      lastKilledBy: Pick<User, "id" | "username"> | null;
+      lastCheckedBy: Pick<User, "id" | "username"> | null;
+    },
     boss: BossDefinition,
   ): BossChannel {
     const killedAt = row.lastKilledAt;
@@ -262,6 +302,8 @@ export class BossChannelsService implements OnModuleInit {
       latestSpawnAt: killedAt
         ? new Date(killedAt.getTime() + boss.spawnMaxHours * HOUR_MS).toISOString()
         : null,
+      lastCheckedAt: row.lastCheckedAt?.toISOString() ?? null,
+      lastCheckedBy: row.lastCheckedBy,
       memo: row.memo,
       isActive: row.isActive,
       updatedAt: row.updatedAt.toISOString(),

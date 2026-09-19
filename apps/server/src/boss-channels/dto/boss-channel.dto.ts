@@ -48,6 +48,16 @@ export class RecordKillDto {
   killedAt?: string;
 }
 
+export class RecordCheckDto {
+  @ApiPropertyOptional({
+    description: "가봤는데 보스가 없던 것을 확인한 시각 (ISO). 생략하면 서버의 현재 시각을 쓴다.",
+    example: "2026-09-19T02:30:00.000Z",
+  })
+  @IsOptional()
+  @IsDateString()
+  checkedAt?: string;
+}
+
 export class UpdateBossChannelDto {
   @ApiPropertyOptional({
     description: "마지막 처치 시각 (ISO). null 을 보내면 타이머를 초기화한다.",

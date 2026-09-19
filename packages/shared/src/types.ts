@@ -111,6 +111,13 @@ export interface BossChannel {
   earliestSpawnAt: string | null;
   /** lastKilledAt + 보스별 spawnMaxHours. 기록이 없으면 null */
   latestSpawnAt: string | null;
+  /**
+   * 출현 시각이 지난 뒤 **가봤는데 보스가 없었다**고 확인한 시각 (ISO).
+   * 처치를 새로 기록하면 지워진다 (새 젠 주기가 시작되므로).
+   */
+  lastCheckedAt: string | null;
+  /** 마지막으로 확인을 기록한 계정. 계정이 지워졌으면 null */
+  lastCheckedBy: AuthUser | null;
   memo: string | null;
   /** 목록에서 감출 채널은 false */
   isActive: boolean;
