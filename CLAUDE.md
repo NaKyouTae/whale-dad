@@ -46,6 +46,10 @@ Turborepo + pnpm 모노레포:
   react-query 캐시 키도 보스별(`["boss-channels", slug]`)로 나눈다
 - 화면은 `components/boss/boss-board.tsx` 하나를 두 라우트가 공유한다. 보스가 늘어도
   페이지를 복사하지 말 것
+- **채널을 없앨 때는 행을 지우지 말고 비활성화한다**(`PATCH .../<channel>` + `isActive: false`).
+  서버가 부팅할 때마다 기본 범위에서 빠진 채널을 다시 만들기 때문에 하드 삭제(`DELETE`)는
+  다음 배포에 되살아난다. 모달의 "이 채널 삭제"(`useRemoveChannel`)가 이 방식이고,
+  게임에 실제로 없는 채널 번호를 판에서 치우는 용도다. 되살리려면 채널 설정에서 범위를 다시 적용한다
 - **채널 목록은 DB 테이블 `boss_channels`** — 하드코딩 금지. 게임 패치로 채널 수가 바뀌면
   `POST /api/bosses/<slug>/channels/sync` 로 범위를 바꾼다. `BOSS_DEFINITIONS` 의
   `channelMin/Max` 는 시드와 UI 기본값일 뿐 실제 목록의 근거가 아니다

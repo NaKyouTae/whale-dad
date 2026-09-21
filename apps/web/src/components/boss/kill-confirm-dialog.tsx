@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, LogIn, RotateCcw, SearchX } from "lucide-react";
+import { Clock, LogIn, RotateCcw, SearchX, Trash2 } from "lucide-react";
 import type { AuthUser, BossChannel } from "@whale-dad/shared";
 import { Button, Modal } from "@/components/ui";
 import { formatDuration, GRADE_LABEL, GRADE_STYLE, type BossTiming } from "@/lib/boss";
@@ -60,6 +60,11 @@ interface KillConfirmDialogProps {
   onCheck: (channel: number, checkedAt?: string) => void;
   /** 처치 기록을 지워 타이머를 되돌린다 */
   onReset: (channel: number) => void;
+  /**
+   * 채널을 목록에서 없앤다 — 게임에 실제로 없는 번호를 치우는 용도.
+   * 하드 삭제가 아니라 비활성화다 (`useRemoveChannel` 참고).
+   */
+  onRemove: (channel: number) => void;
   /** 로그인 모달 열기 */
   onRequestSignIn: () => void;
   busy?: boolean;
@@ -87,6 +92,7 @@ export function KillConfirmDialog({
   onKill,
   onCheck,
   onReset,
+  onRemove,
   onRequestSignIn,
   busy,
   error,
@@ -98,6 +104,9 @@ export function KillConfirmDialog({
   const checkedAt = channel.lastCheckedAt
     ? whenText(channel.lastCheckedAt, channel.lastCheckedBy)
     : null;
+
+  // 삭제는 한 번 더 묻는다 — 잘못 누르면 채널이 판에서 사라져 되돌리는 길이 번거롭다.
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   const [manual, setManual] = useState(false);
   // 열린 순간의 시각을 기본값으로 둔다. 매초 갱신하면 입력 중에 값이 바뀌어버린다.
@@ -275,6 +284,52 @@ export function KillConfirmDialog({
           <p role="alert" className="text-caption text-danger">
             {error instanceof Error ? error.message : "잠시 후 다시 시도해 주세요"}
           </p>
+        )}
+
+        {/*
+          게임에 실제로 없는 채널 번호를 판에서 치우는 자리.
+          기록 버튼들과 섞이면 실수로 누르므로 선 아래 작은 글씨로 내리고, 누르면 한 번 더 묻는다.
+        */}
+        {user && (
+          <div className="border-t border-grey-200 pt-3">
+            {confirmRemove ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-caption text-grey-600">
+                  <b className="text-grey-800">{channel.channel}채널</b>을 목록에서 없앨까요? 게임에
+                  없는 번호일 때만 쓰세요. 기록은 지워지지 않고, 채널 설정에서 범위를 다시 적용하면
+                  되살아나요.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    full
+                    disabled={busy}
+                    onClick={() => onRemove(channel.channel)}
+                  >
+                    <Trash2 size={13} />
+                    채널 삭제
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    full
+                    onClick={() => setConfirmRemove(false)}
+                  >
+                    취소
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmRemove(true)}
+                className="press flex items-center gap-1.5 text-caption font-semibold text-grey-500 hover:text-danger"
+              >
+                <Trash2 size={13} />이 채널 삭제
+              </button>
+            )}
+          </div>
         )}
       </div>
     </Modal>

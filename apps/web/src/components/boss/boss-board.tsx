@@ -16,6 +16,7 @@ import {
   useBossChannels,
   useRecordCheck,
   useRecordKill,
+  useRemoveChannel,
   useResetTimer,
   useSyncChannels,
 } from "@/hooks/use-boss-channels";
@@ -48,6 +49,7 @@ export function BossBoard({ boss }: { boss: BossDefinition }) {
   const recordKill = useRecordKill(boss);
   const recordCheck = useRecordCheck(boss);
   const resetTimer = useResetTimer(boss);
+  const removeChannel = useRemoveChannel(boss);
   const syncChannels = useSyncChannels(boss);
 
   const [openedId, setOpenedId] = useState<string | null>(null);
@@ -83,7 +85,11 @@ export function BossBoard({ boss }: { boss: BossDefinition }) {
     );
   }, [rows, grade, query]);
 
-  const busy = recordKill.isPending || recordCheck.isPending || resetTimer.isPending;
+  const busy =
+    recordKill.isPending ||
+    recordCheck.isPending ||
+    resetTimer.isPending ||
+    removeChannel.isPending;
   // 모달이 열려 있는 동안에도 카운트다운이 계속 흐르도록 rows 에서 매초 다시 집어온다.
   // (필터를 건드려도 닫히지 않도록 필터 전 목록에서 찾는다)
   const opened = openedId ? rows.find((row) => row.channel.id === openedId) : undefined;
@@ -163,13 +169,15 @@ export function BossBoard({ boss }: { boss: BossDefinition }) {
           busy={busy}
           onClose={() => setOpenedId(null)}
           user={user ?? null}
-          error={recordKill.error ?? recordCheck.error ?? resetTimer.error}
+          error={recordKill.error ?? recordCheck.error ?? resetTimer.error ?? removeChannel.error}
           onKill={(ch, killedAt) =>
             recordKill.mutate({ channel: ch, killedAt }, { onSuccess: () => setOpenedId(null) })
           }
           // 확인 기록은 모달을 닫지 않는다 — 기록된 시각을 바로 눈으로 확인하게 둔다
           onCheck={(ch, checkedAt) => recordCheck.mutate({ channel: ch, checkedAt })}
           onReset={(ch) => resetTimer.mutate(ch, { onSuccess: () => setOpenedId(null) })}
+          // 삭제한 채널은 목록에서 빠지므로 모달도 닫는다
+          onRemove={(ch) => removeChannel.mutate(ch, { onSuccess: () => setOpenedId(null) })}
           onRequestSignIn={() => {
             setOpenedId(null);
             setAuthOpen(true);

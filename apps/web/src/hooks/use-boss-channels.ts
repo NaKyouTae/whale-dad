@@ -58,6 +58,26 @@ export function useRecordCheck(boss: BossDefinition) {
   });
 }
 
+/**
+ * 채널을 목록에서 없앤다 — 게임에 실제로 없는 번호를 치울 때 쓴다.
+ *
+ * **하드 삭제(DELETE)가 아니라 비활성화(`isActive: false`)다.** 서버는 부팅할 때마다
+ * 기본 범위(0~231)에서 빠진 채널을 다시 만들기 때문에, 행을 지우면 다음 배포에 되살아난다.
+ * 비활성화된 채널은 목록 응답에서 빠지고 부팅 시드도 건드리지 않아 그대로 유지된다.
+ */
+export function useRemoveChannel(boss: BossDefinition) {
+  const invalidate = useInvalidate(boss.slug);
+
+  return useMutation({
+    mutationFn: (channel: number) =>
+      api<BossChannel>(`${basePath(boss.slug)}/${channel}`, {
+        method: "PATCH",
+        body: JSON.stringify({ isActive: false }),
+      }),
+    onSuccess: invalidate,
+  });
+}
+
 /** 타이머 초기화 — 처치 기록을 지운다 */
 export function useResetTimer(boss: BossDefinition) {
   const invalidate = useInvalidate(boss.slug);
