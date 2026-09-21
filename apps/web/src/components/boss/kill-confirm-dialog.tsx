@@ -99,10 +99,6 @@ export function KillConfirmDialog({
     ? whenText(channel.lastCheckedAt, channel.lastCheckedBy)
     : null;
 
-  // 출현 시각이 지났거나(SPAWNED) 기록을 못 믿는(UNKNOWN) 채널에서만 "가봤는데 없었다" 가 성립한다.
-  // 출현 전이면 보스가 없는 게 당연하므로 남길 이유가 없다.
-  const canCheck = timing.grade === "SPAWNED" || timing.grade === "UNKNOWN";
-
   const [manual, setManual] = useState(false);
   // 열린 순간의 시각을 기본값으로 둔다. 매초 갱신하면 입력 중에 값이 바뀌어버린다.
   const [manualValue, setManualValue] = useState(() => toLocalInputValue(now));
@@ -154,21 +150,19 @@ export function KillConfirmDialog({
               </Button>
 
               {/*
-                처치와 나란히 두는 두 번째 기록 버튼.
-                출현 시각이 지나도 보스가 늘 나와 있지는 않아서, 헛걸음한 시각을 남기면
-                다른 사람이 같은 채널을 또 돌지 않는다. **타이머는 그대로 둔다.**
+                처치와 나란히 두는 두 번째 기록 버튼. **등급과 무관하게 늘 보인다** —
+                언제 다녀왔는지는 아무 때나 남길 수 있어야 하고, 조건을 걸면 방금 처치한 채널에
+                이전 헛걸음을 적어둘 방법이 사라진다. 기록해도 **타이머는 그대로 둔다.**
               */}
-              {canCheck && (
-                <Button
-                  variant="outline"
-                  full
-                  disabled={busy || (manual && checkError !== null)}
-                  onClick={submitCheck}
-                >
-                  <SearchX size={14} />
-                  {manual ? "입력한 시간에 출현 안함" : "출현 안함"}
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                full
+                disabled={busy || (manual && checkError !== null)}
+                onClick={submitCheck}
+              >
+                <SearchX size={14} />
+                {manual ? "입력한 시간에 출현 안함" : "출현 안함"}
+              </Button>
             </>
           ) : (
             <Button variant="primary" full onClick={onRequestSignIn}>
@@ -261,17 +255,9 @@ export function KillConfirmDialog({
               </>
             ) : (
               <p className="text-caption text-grey-600">
-                방금 잡았다면 <b className="text-grey-800">지금 처치함</b>,
-                {canCheck ? (
-                  <>
-                    {" "}
-                    가봤는데 아직 안 나왔다면 <b className="text-grey-800">갔는데 출현 안 함</b>을
-                    누르세요. 확인 기록은 타이머를 건드리지 않아요.
-                  </>
-                ) : (
-                  " 을 누르세요."
-                )}{" "}
-                <b className="text-grey-800">{user.username}</b> 이름으로 기록돼요.
+                방금 잡았다면 <b className="text-grey-800">지금 처치함</b>, 가봤는데 아직 안
+                나왔다면 <b className="text-grey-800">출현 안함</b>을 누르세요. 확인 기록은 타이머를
+                건드리지 않아요. <b className="text-grey-800">{user.username}</b> 이름으로 기록돼요.
               </p>
             )}
           </div>
