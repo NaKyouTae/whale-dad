@@ -77,3 +77,13 @@ export const BOSS_CAUTION_BEFORE_MS = 60 * 60 * 1000;
 export const BOSS_DANGER_BEFORE_MS = 10 * 60 * 1000;
 
 export const HOUR_MS = 60 * 60 * 1000;
+
+/**
+ * 기록이 낡아 못 믿게 되는 시점 — **출현 시각이 지난 뒤** 이만큼 더 지나면 등급을 `UNKNOWN`(미확인)
+ * 으로 되돌린다. 아무도 처치를 기록하지 않은 채 반나절이 지난 채널은 이미 누가 잡았을 가능성이 커서
+ * 타이머를 믿고 움직일 수 없기 때문이다.
+ *
+ * 젠 간격은 보스마다 다르지만 이 값은 **출현 이후**를 재므로 보스 공통이다
+ * (여두목은 처치 후 9시간, 천구는 12시간이 되는 셈).
+ */
+export const BOSS_STALE_AFTER_MS = 6 * HOUR_MS;

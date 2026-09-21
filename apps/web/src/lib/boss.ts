@@ -1,6 +1,7 @@
 import {
   BOSS_CAUTION_BEFORE_MS,
   BOSS_DANGER_BEFORE_MS,
+  BOSS_STALE_AFTER_MS,
   type BossChannel,
   type BossChannelGrade,
 } from "@whale-dad/shared";
@@ -17,6 +18,13 @@ export interface BossTiming {
   sinceKillMs: number | null;
   /** 출현 시각 (처치 + 보스별 spawnMinHours) */
   spawnAt: number | null;
+  /** "갔는데 없었다" 확인 시각으로부터 흐른 시간(ms). 확인 기록이 없으면 null */
+  sinceCheckMs: number | null;
+  /**
+   * 처치 기록은 있지만 출현 후 `BOSS_STALE_AFTER_MS` 가 지나 믿을 수 없게 된 상태.
+   * 이때 `grade` 는 `UNKNOWN` 이지만 기록 자체는 남아 있어 경과 시간을 계속 보여줄 수 있다.
+   */
+  isStale: boolean;
 }
 
 /**
@@ -29,8 +37,15 @@ export interface BossTiming {
  *   ≤ 1시간        주의
  *   ≤ 10분         위험
  *   ≤ 0            출현
+ *
+ * 출현한 채 `BOSS_STALE_AFTER_MS` 가 더 지나면 다시 **미확인**으로 돌아간다 —
+ * 그쯤이면 기록에 없는 처치가 있었을 가능성이 커서 타이머를 믿고 움직일 수 없기 때문이다.
  */
 export function getTiming(channel: BossChannel, now: number): BossTiming {
+  const sinceCheckMs = channel.lastCheckedAt
+    ? Math.max(0, now - Date.parse(channel.lastCheckedAt))
+    : null;
+
   if (!channel.lastKilledAt || !channel.earliestSpawnAt) {
     return {
       grade: "UNKNOWN",
@@ -39,6 +54,8 @@ export function getTiming(channel: BossChannel, now: number): BossTiming {
       progress: null,
       sinceKillMs: null,
       spawnAt: null,
+      sinceCheckMs,
+      isStale: false,
     };
   }
 
@@ -48,13 +65,19 @@ export function getTiming(channel: BossChannel, now: number): BossTiming {
   const sinceKillMs = Math.max(0, now - killedAt);
 
   if (remainingMs <= 0) {
+    const elapsedMs = -remainingMs;
+    // 출현하고도 한참 지난 기록은 못 믿는다 — 등급만 미확인으로 되돌리고 시각은 그대로 둔다.
+    const isStale = elapsedMs > BOSS_STALE_AFTER_MS;
+
     return {
-      grade: "SPAWNED",
+      grade: isStale ? "UNKNOWN" : "SPAWNED",
       remainingMs: null,
-      elapsedMs: -remainingMs,
+      elapsedMs,
       progress: 1,
       sinceKillMs,
       spawnAt,
+      sinceCheckMs,
+      isStale,
     };
   }
 
@@ -72,6 +95,8 @@ export function getTiming(channel: BossChannel, now: number): BossTiming {
     progress: (now - killedAt) / (spawnAt - killedAt),
     sinceKillMs,
     spawnAt,
+    sinceCheckMs,
+    isStale: false,
   };
 }
 
@@ -109,7 +134,7 @@ export function formatDurationShort(ms: number): string {
 export const GRADES: BossChannelGrade[] = ["SAFE", "CAUTION", "DANGER", "SPAWNED", "UNKNOWN"];
 
 export const GRADE_LABEL: Record<BossChannelGrade, string> = {
-  UNKNOWN: "기록 없음",
+  UNKNOWN: "미확인",
   SAFE: "안전",
   CAUTION: "주의",
   DANGER: "위험",
@@ -137,10 +162,11 @@ export function gradeDescription(
 ): string {
   const cautionHours = BOSS_CAUTION_BEFORE_MS / 3_600_000;
   const dangerMinutes = BOSS_DANGER_BEFORE_MS / 60_000;
+  const staleHours = BOSS_STALE_AFTER_MS / 3_600_000;
 
   switch (grade) {
     case "UNKNOWN":
-      return "처치 기록 없음";
+      return `기록 없음 · 출현 후 ${staleHours}시간 경과`;
     case "SAFE":
       return `처치 후 0~${spawn.minHours - cautionHours}시간`;
     case "CAUTION":

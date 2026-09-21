@@ -86,7 +86,7 @@ export interface BossDefinition {
  * (서버 응답을 계속 폴링하지 않아도 카운트다운이 살아 있도록).
  */
 export type BossChannelGrade =
-  /** 처치 기록 없음 */
+  /** 미확인 — 처치 기록이 없거나, 출현 후 `BOSS_STALE_AFTER_MS` 가 지나 기록을 믿을 수 없음 */
   | "UNKNOWN"
   /** 안전 — 출현까지 1시간 넘게 남음 */
   | "SAFE"

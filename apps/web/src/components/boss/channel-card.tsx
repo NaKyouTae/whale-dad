@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { SearchX } from "lucide-react";
 import type { BossChannel } from "@whale-dad/shared";
 import { cn } from "@/lib/utils";
 import {
@@ -45,13 +46,12 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
       type="button"
       onClick={() => onOpen(channel)}
       title={[
-        `${channel.channel}채널 — ${GRADE_LABEL[timing.grade]}`,
+        `${channel.channel}채널 — ${GRADE_LABEL[timing.grade]}` +
+          (timing.isStale ? " (출현 후 오래돼 기록을 믿기 어려움)" : ""),
         channel.lastKilledBy ? `마지막 처치: ${channel.lastKilledBy.username}` : null,
-        // 카드는 두 줄을 지켜야 해서 확인 기록은 툴팁으로만 보여준다
         channel.lastCheckedAt
-          ? `확인: ${shortDateTime(channel.lastCheckedAt)}` +
-            (channel.lastCheckedBy ? ` ${channel.lastCheckedBy.username}` : "") +
-            " — 보스 없었음"
+          ? `출현 안함: ${shortDateTime(channel.lastCheckedAt)}` +
+            (channel.lastCheckedBy ? ` ${channel.lastCheckedBy.username}` : "")
           : null,
         "누르면 처치 기록 창",
       ]
@@ -71,13 +71,31 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
         <span className={cn("text-[11px] leading-none font-bold tabular-nums", style.num)}>
           {channel.channel}
         </span>
-        {channel.lastKilledBy && (
+        {/*
+          확인 기록이 있으면 처치자 이름 대신 **마지막으로 헛걸음한 지 얼마나 됐는지**를 보여준다.
+          카드는 두 줄이 한계라 둘 다 놓을 수 없는데, 확인 기록이 남아 있는 동안(= 출현이 지났는데
+          아직 아무도 못 잡은 구간)에는 "언제 가봤나" 가 이름보다 판단에 쓸모 있다.
+          처치자 이름은 툴팁과 모달에 그대로 남는다.
+        */}
+        {timing.sinceCheckMs !== null ? (
           <span
-            className={cn("min-w-0 truncate text-[10px] leading-none font-medium", style.num)}
-            title={channel.lastKilledBy.username}
+            className={cn(
+              "flex shrink-0 items-center gap-[2px] text-[10px] leading-none font-semibold tabular-nums",
+              style.num,
+            )}
           >
-            {channel.lastKilledBy.username}
+            <SearchX size={9} aria-hidden className="shrink-0" />
+            {formatDurationShort(timing.sinceCheckMs)}
           </span>
+        ) : (
+          channel.lastKilledBy && (
+            <span
+              className={cn("min-w-0 truncate text-[10px] leading-none font-medium", style.num)}
+              title={channel.lastKilledBy.username}
+            >
+              {channel.lastKilledBy.username}
+            </span>
+          )
         )}
       </span>
 
@@ -117,9 +135,13 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
 export const ChannelCard = memo(ChannelCardBase, (prev, next) => {
   const prevMin = Math.floor((prev.timing.sinceKillMs ?? 0) / 60_000);
   const nextMin = Math.floor((next.timing.sinceKillMs ?? 0) / 60_000);
+  // 확인 경과도 분 단위로 보이므로 같은 기준으로 비교한다
+  const prevCheckMin = Math.floor((prev.timing.sinceCheckMs ?? 0) / 60_000);
+  const nextCheckMin = Math.floor((next.timing.sinceCheckMs ?? 0) / 60_000);
 
   return (
     prevMin === nextMin &&
+    prevCheckMin === nextCheckMin &&
     prev.timing.grade === next.timing.grade &&
     prev.channel.lastKilledAt === next.channel.lastKilledAt &&
     prev.channel.lastKilledBy?.username === next.channel.lastKilledBy?.username &&
