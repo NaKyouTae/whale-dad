@@ -18,8 +18,6 @@ export interface BossTiming {
   sinceKillMs: number | null;
   /** 출현 시각 (처치 + 보스별 spawnMinHours) */
   spawnAt: number | null;
-  /** "갔는데 없었다" 확인 시각으로부터 흐른 시간(ms). 확인 기록이 없으면 null */
-  sinceCheckMs: number | null;
   /**
    * 처치 기록은 있지만 출현 후 `BOSS_STALE_AFTER_MS` 가 지나 믿을 수 없게 된 상태.
    * 이때 `grade` 는 `UNKNOWN` 이지만 기록 자체는 남아 있어 경과 시간을 계속 보여줄 수 있다.
@@ -42,10 +40,6 @@ export interface BossTiming {
  * 그쯤이면 기록에 없는 처치가 있었을 가능성이 커서 타이머를 믿고 움직일 수 없기 때문이다.
  */
 export function getTiming(channel: BossChannel, now: number): BossTiming {
-  const sinceCheckMs = channel.lastCheckedAt
-    ? Math.max(0, now - Date.parse(channel.lastCheckedAt))
-    : null;
-
   if (!channel.lastKilledAt || !channel.earliestSpawnAt) {
     return {
       grade: "UNKNOWN",
@@ -54,7 +48,6 @@ export function getTiming(channel: BossChannel, now: number): BossTiming {
       progress: null,
       sinceKillMs: null,
       spawnAt: null,
-      sinceCheckMs,
       isStale: false,
     };
   }
@@ -76,7 +69,6 @@ export function getTiming(channel: BossChannel, now: number): BossTiming {
       progress: 1,
       sinceKillMs,
       spawnAt,
-      sinceCheckMs,
       isStale,
     };
   }
@@ -95,7 +87,6 @@ export function getTiming(channel: BossChannel, now: number): BossTiming {
     progress: (now - killedAt) / (spawnAt - killedAt),
     sinceKillMs,
     spawnAt,
-    sinceCheckMs,
     isStale: false,
   };
 }

@@ -16,9 +16,19 @@ import {
  * 카드에는 **처치 후 흐른 시간**을 분 단위로 보여준다.
  * 00:00 에서 시작해 계속 올라가고, 그 보스의 최소 젠 시간을 넘기면 출현 상태(색으로 구분)다.
  * 초는 일부러 뺐다 — 232개가 매초 바뀌면 읽히지 않는다 (정확한 초는 모달에서 본다).
+ *
+ * **미확인은 늘 `--:--`** — 기록이 없든 출현 후 6시간이 넘어 믿을 수 없게 됐든,
+ * 숫자를 보여주면 아직 쓸 수 있는 타이머처럼 읽힌다. 경과 시간은 모달에서 확인한다.
  */
 function timeText(timing: BossTiming): string {
-  return timing.sinceKillMs === null ? "--:--" : formatDurationShort(timing.sinceKillMs);
+  if (timing.grade === "UNKNOWN" || timing.sinceKillMs === null) return "--:--";
+  return formatDurationShort(timing.sinceKillMs);
+}
+
+/** 카드에 쓰는 "13:20" — 언제 다녀왔는지 */
+function clockTime(iso: string): string {
+  const at = new Date(iso);
+  return `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
 }
 
 /** 한 줄짜리 "9월 19일 14:30" */
@@ -58,8 +68,9 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
         .filter(Boolean)
         .join(" · ")}
       className={cn(
-        // 모바일 터치 영역 확보(44px) + 좁은 화면에서 좌우 여백을 줄여 "등급 - 시간" 이 잘리지 않게 한다
-        "press relative flex min-h-11 w-full flex-col items-center justify-center gap-0.5 overflow-hidden rounded-sm border px-1 py-1.5 transition-colors sm:px-2",
+        // 세 줄(번호·아이디 / 등급 - 시간 / 확인 시각)이 들어가는 높이.
+        // 좁은 화면에서 좌우 여백을 줄여 "등급 - 시간" 이 잘리지 않게 한다
+        "press relative flex min-h-15 w-full flex-col items-center justify-center gap-0.5 overflow-hidden rounded-sm border px-1 py-1.5 transition-colors sm:px-2",
         // 기본 포커스 링은 카드 바깥에 떠서 이중 테두리처럼 보인다.
         // 카드 안쪽에 그리고, 등급 배경과 대비되는 색을 쓴다.
         "focus-visible:outline-2 focus-visible:[outline-offset:-3px]",
@@ -71,31 +82,13 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
         <span className={cn("text-[11px] leading-none font-bold tabular-nums", style.num)}>
           {channel.channel}
         </span>
-        {/*
-          확인 기록이 있으면 처치자 이름 대신 **마지막으로 헛걸음한 지 얼마나 됐는지**를 보여준다.
-          카드는 두 줄이 한계라 둘 다 놓을 수 없는데, 확인 기록이 남아 있는 동안(= 출현이 지났는데
-          아직 아무도 못 잡은 구간)에는 "언제 가봤나" 가 이름보다 판단에 쓸모 있다.
-          처치자 이름은 툴팁과 모달에 그대로 남는다.
-        */}
-        {timing.sinceCheckMs !== null ? (
+        {channel.lastKilledBy && (
           <span
-            className={cn(
-              "flex shrink-0 items-center gap-[2px] text-[10px] leading-none font-semibold tabular-nums",
-              style.num,
-            )}
+            className={cn("min-w-0 truncate text-[10px] leading-none font-medium", style.num)}
+            title={channel.lastKilledBy.username}
           >
-            <SearchX size={9} aria-hidden className="shrink-0" />
-            {formatDurationShort(timing.sinceCheckMs)}
+            {channel.lastKilledBy.username}
           </span>
-        ) : (
-          channel.lastKilledBy && (
-            <span
-              className={cn("min-w-0 truncate text-[10px] leading-none font-medium", style.num)}
-              title={channel.lastKilledBy.username}
-            >
-              {channel.lastKilledBy.username}
-            </span>
-          )
         )}
       </span>
 
@@ -117,6 +110,23 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
         <span className="text-[13px] tabular-nums">{timeText(timing)}</span>
       </span>
 
+      {/*
+        세 번째 줄 — "가봤는데 출현 안 했다" 고 마지막으로 확인한 **시각**.
+        경과가 아니라 시각(13:20)인 이유는 "언제 다녀갔나" 가 궁금한 정보이기 때문이고,
+        덕분에 이 줄은 매분 다시 그릴 필요도 없다. 기록이 없으면 줄 자체가 빠진다.
+      */}
+      {channel.lastCheckedAt && (
+        <span
+          className={cn(
+            "flex max-w-full items-center gap-[2px] text-[10px] leading-none font-semibold tabular-nums",
+            style.num,
+          )}
+        >
+          <SearchX size={9} aria-hidden className="shrink-0" />
+          {clockTime(channel.lastCheckedAt)}
+        </span>
+      )}
+
       {/* 출현까지의 진행바 — 카드 맨 아래 2px 선이라 줄 수를 늘리지 않는다 */}
       <span
         aria-hidden
@@ -135,13 +145,9 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
 export const ChannelCard = memo(ChannelCardBase, (prev, next) => {
   const prevMin = Math.floor((prev.timing.sinceKillMs ?? 0) / 60_000);
   const nextMin = Math.floor((next.timing.sinceKillMs ?? 0) / 60_000);
-  // 확인 경과도 분 단위로 보이므로 같은 기준으로 비교한다
-  const prevCheckMin = Math.floor((prev.timing.sinceCheckMs ?? 0) / 60_000);
-  const nextCheckMin = Math.floor((next.timing.sinceCheckMs ?? 0) / 60_000);
 
   return (
     prevMin === nextMin &&
-    prevCheckMin === nextCheckMin &&
     prev.timing.grade === next.timing.grade &&
     prev.channel.lastKilledAt === next.channel.lastKilledAt &&
     prev.channel.lastKilledBy?.username === next.channel.lastKilledBy?.username &&
