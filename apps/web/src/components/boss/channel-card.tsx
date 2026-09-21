@@ -1,7 +1,6 @@
 "use client";
 
 import { memo } from "react";
-import { SearchX } from "lucide-react";
 import type { BossChannel } from "@whale-dad/shared";
 import { cn } from "@/lib/utils";
 import {
@@ -68,9 +67,10 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
         .filter(Boolean)
         .join(" · ")}
       className={cn(
-        // 세 줄(번호·아이디 / 등급 - 시간 / 확인 시각)이 들어가는 높이.
-        // 좁은 화면에서 좌우 여백을 줄여 "등급 - 시간" 이 잘리지 않게 한다
-        "press relative flex min-h-15 w-full flex-col items-center justify-center gap-0.5 overflow-hidden rounded-sm border px-1 py-1.5 transition-colors sm:px-2",
+        // 세 줄(번호·아이디 / 등급 - 시간 / 출현 안함 시각)이 들어가는 높이.
+        // 좌우 여백은 칸이 가장 좁은 md(8열, 768px)에서 "출현 안함 13:20" 이 잘리지 않도록
+        // 4px 로 두고, 자리가 남는 lg(10열)에서만 넓힌다
+        "press relative flex min-h-15 w-full flex-col items-center justify-center gap-0.5 overflow-hidden rounded-sm border px-1 py-1.5 transition-colors lg:px-2",
         // 기본 포커스 링은 카드 바깥에 떠서 이중 테두리처럼 보인다.
         // 카드 안쪽에 그리고, 등급 배경과 대비되는 색을 쓴다.
         "focus-visible:outline-2 focus-visible:[outline-offset:-3px]",
@@ -114,16 +114,18 @@ function ChannelCardBase({ channel, timing, onOpen }: ChannelCardProps) {
         세 번째 줄 — "가봤는데 출현 안 했다" 고 마지막으로 확인한 **시각**.
         경과가 아니라 시각(13:20)인 이유는 "언제 다녀갔나" 가 궁금한 정보이기 때문이고,
         덕분에 이 줄은 매분 다시 그릴 필요도 없다. 기록이 없으면 줄 자체가 빠진다.
+        아이콘 대신 "출현 안함" 이라고 적는다 — 아이콘만으로는 무슨 기록인지 알 수 없다.
+        md(8열)에서 한 줄에 겨우 들어가므로 라벨은 9px 로 둔다.
       */}
       {channel.lastCheckedAt && (
         <span
           className={cn(
-            "flex max-w-full items-center gap-[2px] text-[10px] leading-none font-semibold tabular-nums",
+            "flex max-w-full items-baseline gap-[3px] leading-none font-semibold whitespace-nowrap",
             style.num,
           )}
         >
-          <SearchX size={9} aria-hidden className="shrink-0" />
-          {clockTime(channel.lastCheckedAt)}
+          <span className="text-[9px]">출현 안함</span>
+          <span className="text-[10px] tabular-nums">{clockTime(channel.lastCheckedAt)}</span>
         </span>
       )}
 

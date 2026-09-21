@@ -29,7 +29,12 @@ const KILLED_BY = {
   lastCheckedBy: { select: { id: true, username: true } },
 } as const;
 
-/** 새 젠 주기가 시작되면 "가봤는데 없었다" 기록은 의미가 없어지므로 함께 지운다 */
+/**
+ * 확인 기록을 비운다.
+ *
+ * **처치 기록에는 쓰지 않는다** — 처치한 뒤에도 "언제 가봤는데 없었는지" 를 카드에서 계속
+ * 보여줘야 해서 그대로 남긴다. 기록 자체를 지우는 동작(타이머 초기화, 처치 시각 비우기)에만 쓴다.
+ */
 const CLEAR_CHECK = { lastCheckedAt: null, lastCheckedById: null } as const;
 
 @Injectable()
@@ -94,7 +99,11 @@ export class BossChannelsService implements OnModuleInit {
     };
   }
 
-  /** 처치 기록 — 이 채널의 타이머를 다시 돌린다. 누가 기록했는지도 남긴다. */
+  /**
+   * 처치 기록 — 이 채널의 타이머를 다시 돌린다. 누가 기록했는지도 남긴다.
+   * 확인 기록(`lastCheckedAt`)은 지우지 않는다 — 처치 후에도 마지막으로 다녀간 시각을
+   * 카드에서 함께 보여준다.
+   */
   async recordKill(
     bossType: BossType,
     channel: number,
@@ -109,7 +118,6 @@ export class BossChannelsService implements OnModuleInit {
       data: {
         lastKilledAt: killedAt ? new Date(killedAt) : new Date(),
         lastKilledById: userId,
-        ...CLEAR_CHECK,
       },
       include: KILLED_BY,
     });
@@ -135,8 +143,8 @@ export class BossChannelsService implements OnModuleInit {
           lastKilledAt: dto.lastKilledAt === null ? null : new Date(dto.lastKilledAt),
           // 시각을 지우면 기록자도 함께 지운다
           lastKilledById: dto.lastKilledAt === null ? null : (userId ?? undefined),
-          // 처치 시각이 바뀌면 젠 주기가 달라지므로 확인 기록은 버린다
-          ...CLEAR_CHECK,
+          // 처치 기록을 통째로 비우는 경우에만 확인 기록도 함께 버린다
+          ...(dto.lastKilledAt === null ? CLEAR_CHECK : {}),
         }),
         ...(dto.memo !== undefined && { memo: dto.memo }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),

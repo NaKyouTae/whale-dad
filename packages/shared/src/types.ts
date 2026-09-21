@@ -112,8 +112,9 @@ export interface BossChannel {
   /** lastKilledAt + 보스별 spawnMaxHours. 기록이 없으면 null */
   latestSpawnAt: string | null;
   /**
-   * 출현 시각이 지난 뒤 **가봤는데 보스가 없었다**고 확인한 시각 (ISO).
-   * 처치를 새로 기록하면 지워진다 (새 젠 주기가 시작되므로).
+   * **가봤는데 보스가 아직 안 나왔다**고 확인한 시각 (ISO).
+   * 처치를 새로 기록해도 남는다 — 마지막으로 다녀간 시각을 카드에서 계속 보여주기 위해서다.
+   * 타이머를 초기화하거나 처치 시각을 비우면 함께 지워진다.
    */
   lastCheckedAt: string | null;
   /** 마지막으로 확인을 기록한 계정. 계정이 지워졌으면 null */
